@@ -32,10 +32,10 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="rm-card group overflow-hidden h-[480px] flex flex-col">
-      <Link to={`/product/${product.id}`} className="block flex-1 flex flex-col">
+    <div className="rm-card group overflow-hidden h-[520px] flex flex-col">
+      <Link to={`/product/${product.id}`} className="block flex-1 flex flex-col min-h-0">
         {/* Image Section - Fixed Height */}
-        <div className="relative overflow-hidden rounded-lg mb-4 h-48 flex-shrink-0">
+        <div className="relative overflow-hidden rounded-lg mb-3 h-48 flex-shrink-0">
           <img
             src={product.image}
             alt={product.name}
@@ -62,23 +62,23 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Content Section - Flexible Height */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Title - Fixed Height */}
-          <h3 className="text-lg font-bold mb-2 text-gray-800 group-hover:text-yellow-600 transition-colors line-clamp-2 h-14 flex items-start">
+          <h3 className="text-lg font-bold mb-2 text-gray-800 group-hover:text-yellow-600 transition-colors line-clamp-2 h-14 flex items-start leading-tight">
             {product.name}
           </h3>
 
           {/* Description - Fixed Height */}
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2 h-10 overflow-hidden">
+          <p className="text-gray-600 text-sm mb-2 line-clamp-2 h-10 overflow-hidden leading-tight">
             {product.description}
           </p>
 
           {/* Specifications - Fixed Height */}
-          <div className="flex flex-wrap gap-1 mb-3 h-7 overflow-hidden">
+          <div className="flex flex-wrap gap-1 mb-2 h-6 overflow-hidden">
             {product.specifications.slice(0, 2).map((spec, index) => (
               <span
                 key={index}
-                className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-mono border border-gray-300 h-6 flex items-center"
+                className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-mono border border-gray-300 h-5 flex items-center"
               >
                 {spec}
               </span>
@@ -88,9 +88,9 @@ export function ProductCard({ product }: ProductCardProps) {
       </Link>
 
       {/* Footer Section - Fixed at Bottom */}
-      <div className="flex-shrink-0 space-y-3">
+      <div className="flex-shrink-0 space-y-2 mt-auto">
         {/* Price Section - Fixed Height */}
-        <div className="h-8 flex items-center space-x-2">
+        <div className="h-7 flex items-center space-x-2">
           <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 flex-shrink-0">
             {formatPrice(product.price)}
           </span>
@@ -107,13 +107,13 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
         
         {/* Stock Info - Fixed Height */}
-        <p className="text-xs text-gray-600 h-4">庫存：{product.stock} 件</p>
+        <p className="text-xs text-gray-600 h-4 leading-none">庫存：{product.stock} 件</p>
 
         {/* Button - Fixed Height */}
         <button
           onClick={handleAddToCart}
           disabled={product.stock === 0}
-          className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 h-12 flex items-center justify-center ${
+          className={`w-full py-2.5 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 h-10 flex items-center justify-center text-sm ${
             product.stock === 0
               ? 'bg-gray-300 cursor-not-allowed text-gray-500'
               : 'rm-button text-center'
