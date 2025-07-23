@@ -1,0 +1,342 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@300;400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light Theme - 黃黑卡通風格配色 */
+  --primary-yellow: #FFD500;
+  --primary-yellow-light: #FFEF75;
+  --primary-yellow-dark: #E6C200;
+  --secondary-black: #1E1E1E;
+  --secondary-gray: #333333;
+  --light-gray: #CFCFCF;
+  --accent-red: #FF4D4D;
+  --accent-red-light: #FF7A7A;
+  --bg-light: #FFFFFF;
+  --bg-light-gray: #F8F8F8;
+  --text-dark: #1E1E1E;
+  --text-gray: #333333;
+  --text-light-gray: #666666;
+  --border-gray: #E0E0E0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Roboto Mono', monospace;
+  background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-light-gray) 100%);
+  color: var(--text-dark);
+  min-height: 100vh;
+}
+
+/* Rick and Morty themed components - Light Theme */
+
+.rm-button {
+  @apply relative px-6 py-3 font-bold rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95;
+  font-family: 'Orbitron', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid transparent;
+  background: linear-gradient(45deg, var(--primary-yellow), var(--primary-yellow-light));
+  color: var(--secondary-black);
+  box-shadow: 0 4px 15px rgba(255, 213, 0, 0.3);
+}
+
+.rm-button:hover {
+  box-shadow: 0 6px 25px rgba(255, 213, 0, 0.5), 0 0 20px rgba(255, 213, 0, 0.3);
+  background: linear-gradient(45deg, var(--primary-yellow-dark), var(--primary-yellow));
+  transform: translateY(-2px) scale(1.05);
+}
+
+.rm-button-secondary {
+  @apply relative px-6 py-3 font-bold rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95;
+  font-family: 'Orbitron', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid var(--secondary-gray);
+  background: var(--bg-light);
+  color: var(--secondary-black);
+  box-shadow: 0 4px 15px rgba(51, 51, 51, 0.2);
+}
+
+.rm-button-secondary:hover {
+  box-shadow: 0 6px 25px rgba(51, 51, 51, 0.3);
+  background: var(--light-gray);
+  border-color: var(--secondary-black);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.rm-button-danger {
+  @apply relative px-6 py-3 font-bold text-white rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95;
+  font-family: 'Orbitron', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid transparent;
+  background: linear-gradient(45deg, var(--accent-red), var(--accent-red-light));
+  box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+}
+
+.rm-button-danger:hover {
+  box-shadow: 0 6px 25px rgba(255, 77, 77, 0.5), 0 0 20px rgba(255, 77, 77, 0.3);
+  background: linear-gradient(45deg, var(--accent-red-light), var(--accent-red));
+  transform: translateY(-2px) scale(1.05);
+}
+
+.rm-card {
+  @apply relative rounded-xl p-6 shadow-lg;
+  background: var(--bg-light);
+  border: 2px solid var(--border-gray);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 213, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.rm-card:hover {
+  border-color: var(--primary-yellow);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(255, 213, 0, 0.3);
+  transform: translateY(-4px);
+}
+
+.rm-input {
+  @apply w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-all duration-300;
+  font-family: 'Roboto Mono', monospace;
+  background: var(--bg-light);
+  border-color: var(--border-gray);
+  color: var(--text-dark);
+}
+
+.rm-input::placeholder {
+  color: var(--text-light-gray);
+}
+
+.rm-input:focus {
+  border-color: var(--primary-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.2);
+  background: var(--bg-light);
+}
+
+.rm-portal {
+  position: relative;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-yellow) 0%, var(--accent-red) 50%, var(--secondary-black) 100%);
+  animation: portal-spin 4s linear infinite;
+}
+
+@keyframes portal-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.rm-glow {
+  position: relative;
+}
+
+.rm-glow::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--primary-yellow), var(--accent-red), var(--secondary-black), var(--primary-yellow));
+  border-radius: inherit;
+  z-index: -1;
+  animation: glow-animation 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow-animation {
+  0% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
+}
+
+.rm-text-glow {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+.rm-bg-pattern {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 213, 0, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 77, 77, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(30, 30, 30, 0.02) 0%, transparent 50%);
+}
+
+/* Scrollbar styling - Light Theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary-yellow), var(--primary-yellow-dark));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--primary-yellow-light), var(--primary-yellow));
+}
+
+/* Loading animation */
+.rm-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 213, 0, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--primary-yellow);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Product grid animations */
+.product-enter {
+  opacity: 0;
+  transform: scale(0.9) translateY(20px);
+}
+
+.product-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Toast customization */
+.rm-toast {
+  font-family: 'Roboto Mono', monospace !important;
+  font-weight: 500 !important;
+}
+
+/* Admin panel styles - Light Theme */
+.admin-sidebar {
+  background: linear-gradient(180deg, var(--bg-light) 0%, var(--bg-light-gray) 100%);
+  border-right: 2px solid var(--border-gray);
+}
+
+.admin-sidebar-item {
+  @apply flex items-center px-4 py-3 transition-all duration-200;
+  color: var(--text-gray);
+  border-left: 3px solid transparent;
+  border-radius: 8px;
+  margin: 2px 0;
+}
+
+.admin-sidebar-item:hover {
+  background: var(--bg-light-gray);
+  color: var(--text-dark);
+  border-left-color: var(--primary-yellow);
+  box-shadow: inset 5px 0 10px rgba(255, 213, 0, 0.1);
+}
+
+.admin-sidebar-item.active {
+  background: var(--primary-yellow);
+  color: var(--secondary-black);
+  border-left-color: var(--primary-yellow-dark);
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(255, 213, 0, 0.3);
+}
+
+/* Navigation styles */
+.nav-link {
+  @apply transition-all duration-200;
+  color: var(--text-gray);
+}
+
+.nav-link:hover {
+  color: var(--primary-yellow-dark);
+  text-shadow: 0 0 8px rgba(255, 213, 0, 0.5);
+}
+
+/* Card hover effects */
+.product-card {
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(255, 213, 0, 0.2);
+}
+
+/* Badge styles */
+.badge-featured {
+  background: linear-gradient(45deg, var(--primary-yellow), var(--primary-yellow-light));
+  color: var(--secondary-black);
+  font-weight: bold;
+  text-shadow: none;
+}
+
+.badge-discount {
+  background: linear-gradient(45deg, var(--accent-red), var(--accent-red-light));
+  color: white;
+  font-weight: bold;
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .rm-button {
+    @apply px-4 py-2 text-sm;
+  }
+  
+  .rm-card {
+    @apply p-4;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .rm-button {
+    @apply px-3 py-2 text-xs;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Dark text for light backgrounds */
+.text-dark {
+  color: var(--text-dark) !important;
+}
+
+.text-gray {
+  color: var(--text-gray) !important;
+}
+
+.text-light-gray {
+  color: var(--text-light-gray) !important;
+}
+
+/* Background utilities */
+.bg-light {
+  background-color: var(--bg-light) !important;
+}
+
+.bg-light-gray {
+  background-color: var(--bg-light-gray) !important;
+}
