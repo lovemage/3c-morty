@@ -10,8 +10,6 @@ export function Search() {
   const [results, setResults] = useState<Product[]>([]);
   const [filteredResults, setFilteredResults] = useState<Product[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
-  const [sortBy, setSortBy] = useState<'relevance' | 'price-asc' | 'price-desc' | 'name'>('relevance');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -39,25 +37,16 @@ export function Search() {
       filtered = filtered.filter(p => selectedCategories.includes(p.category));
     }
 
-    // Filter by price range
-    filtered = filtered.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
-
-    // Sort results
+    // Sort by relevance (default)
     filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'price-asc':
-          return a.price - b.price;
-        case 'price-desc':
-          return b.price - a.price;
-        case 'name':
-          return a.name.localeCompare(b.name);
-        default: // relevance
-          return 0;
-      }
+      // Sort by how many times the query appears in the name
+      const aScore = a.name.toLowerCase().split(query.toLowerCase()).length - 1;
+      const bScore = b.name.toLowerCase().split(query.toLowerCase()).length - 1;
+      return bScore - aScore;
     });
 
     setFilteredResults(filtered);
-  }, [results, selectedCategories, priceRange, sortBy]);
+  }, [results, selectedCategories, query]);
 
   const performSearch = (searchQuery: string) => {
     setLoading(true);
@@ -96,18 +85,9 @@ export function Search() {
 
   const clearFilters = () => {
     setSelectedCategories([]);
-    const allPrices = storage.getProducts().map(p => p.price);
-    setPriceRange([Math.min(...allPrices), Math.max(...allPrices)]);
-    setSortBy('relevance');
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('zh-TW', {
-      style: 'currency',
-      currency: 'TWD',
-      minimumFractionDigits: 0
-    }).format(price);
-  };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -144,7 +124,7 @@ export function Search() {
       {/* Filters - Top Layout */}
       <div className="rm-card mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-800">篩選與排序</h3>
+          <h3 className="text-lg font-bold text-gray-800">產品分類篩選</h3>
           <div className="flex space-x-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -163,65 +143,20 @@ export function Search() {
         </div>
         
         <div className={`${showFilters ? 'block' : 'hidden lg:block'}`}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-end">
-            {/* Sort By */}
-            <div className="lg:col-span-3">
-              <h4 className="font-semibold mb-3 text-gray-800">排序方式</h4>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="rm-input text-sm w-full"
-              >
-                <option value="relevance">相關性</option>
-                <option value="price-asc">價格低到高</option>
-                <option value="price-desc">價格高到低</option>
-                <option value="name">名稱排序</option>
-              </select>
-            </div>
-
-            {/* Categories */}
-            <div className="lg:col-span-5">
-              <h4 className="font-semibold mb-3 text-gray-800">分類</h4>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(categoryNames).map(([key, name]) => (
-                  <label key={key} className="flex items-center space-x-2 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg border hover:bg-gray-200 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(key)}
-                      onChange={() => handleCategoryChange(key)}
-                      className="w-4 h-4 accent-yellow-500"
-                    />
-                    <span className="text-gray-700 text-sm">{name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Range */}
-            <div className="lg:col-span-4">
-              <h4 className="font-semibold mb-3 text-gray-800">價格範圍</h4>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
+          <div>
+            <h4 className="font-semibold mb-4 text-gray-800 hidden lg:block">選擇產品分類</h4>
+            <div className="flex flex-wrap gap-3">
+              {Object.entries(categoryNames).map(([key, name]) => (
+                <label key={key} className="flex items-center space-x-2 cursor-pointer bg-gray-100 px-4 py-3 rounded-lg border hover:bg-gray-200 transition-colors">
                   <input
-                    type="number"
-                    value={priceRange[0]}
-                    onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                    className="rm-input text-sm w-28"
-                    placeholder="最低價格"
+                    type="checkbox"
+                    checked={selectedCategories.includes(key)}
+                    onChange={() => handleCategoryChange(key)}
+                    className="w-4 h-4 accent-yellow-500"
                   />
-                  <span className="text-gray-500">~</span>
-                  <input
-                    type="number"
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 100000])}
-                    className="rm-input text-sm w-28"
-                    placeholder="最高價格"
-                  />
-                </div>
-                <p className="text-xs text-gray-500">
-                  {formatPrice(priceRange[0])} ~ {formatPrice(priceRange[1])}
-                </p>
-              </div>
+                  <span className="text-gray-700 font-medium">{name}</span>
+                </label>
+              ))}
             </div>
           </div>
         </div>
