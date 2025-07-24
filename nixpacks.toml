@@ -7,11 +7,7 @@ node = "nodejs_20"
 [phases.install]
 dependsOn = ['setup']
 cmds = [
-  'echo "🔍 檢查構建環境："',
-  'pwd',
-  'echo "列出當前目錄："',
-  'ls -la',
-  'echo "📦 在源代碼目錄安裝依賴："',
+  'echo "📦 安裝依賴："',
   'npm ci'
 ]
 
@@ -20,20 +16,11 @@ dependsOn = ['install']
 cmds = [
   'echo "🔨 構建前端："',
   'npm run build',
-  'echo "📂 準備部署到 /app 卷："',
-  'echo "確保 /app 目錄存在："',
-  'mkdir -p /app',
-  'echo "複製項目文件到 /app："',
-  'cp -r . /app/',
-  'echo "設置權限："',
-  'chmod +x /app/start.sh',
-  'echo "✅ 部署完成，檢查 /app 內容："',
-  'ls -la /app/',
-  'ls -la /app/package.json'
+  'echo "✅ 構建完成"'
 ]
 
 [start]
-cmd = 'cd /app && npm start'
+cmd = 'npm start'
 
 [deploy]
 type = "node"
@@ -41,10 +28,9 @@ type = "node"
 [variables]
 NODE_ENV = 'production'
 
-# Railway 根目錄配置 - 所有文件在 /app 根目錄
-# 不使用子目錄：rick-morty-ecommerce
-# 項目根目錄: /app
-# 數據庫路徑: /app/server/database/database.db  
-# 靜態文件: /app/public/images/
-# 構建輸出: /app/dist/
-# 啟動文件: /app/server/index.js 
+# Railway 標準部署配置 - 無持久化卷
+# 項目根目錄: 工作目錄
+# 數據庫路徑: server/database/database.db (相對路徑)
+# 靜態文件: public/images/ (相對路徑)
+# 構建輸出: dist/ (相對路徑)
+# 啟動文件: server/index.js (相對路徑) 
