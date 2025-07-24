@@ -33,7 +33,7 @@ app.use(helmet({
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
+    ? (process.env.FRONTEND_URL || true) // 允許所有來源如果沒有設定 FRONTEND_URL
     : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
   credentials: true
 }));
@@ -108,11 +108,14 @@ const startServer = async () => {
     await initializeDatabase();
     console.log('✅ 數據庫初始化完成');
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log('🚀 Corba 3C Shop API Server 正在運行');
-      console.log(`📍 Server: http://localhost:${PORT}`);
-      console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
+      console.log(`📍 Server: http://0.0.0.0:${PORT}`);
+      console.log(`🏥 Health: http://0.0.0.0:${PORT}/api/health`);
       console.log(`🛍️ 環境: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 CORS Origin: ${process.env.NODE_ENV === 'production' ? (process.env.FRONTEND_URL || 'all origins') : 'development origins'}`);
+      console.log(`📁 Dist directory exists: ${require('fs').existsSync(path.join(__dirname, '../dist'))}`);
+      console.log(`📄 Index.html exists: ${require('fs').existsSync(path.join(__dirname, '../dist/index.html'))}`);
     });
   } catch (error) {
     console.error('❌ 服務器啟動失敗:', error);

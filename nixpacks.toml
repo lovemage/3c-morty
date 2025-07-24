@@ -7,14 +7,19 @@ cmds = ['npm ci']
 
 [phases.build]
 dependsOn = ['install']
-cmds = ['npm run build']
+cmds = [
+  'npm run build',
+  'echo "Build completed - checking files:"',
+  'ls -la dist/',
+  'echo "Index.html content:"',
+  'head -5 dist/index.html'
+]
 
 [start]
 cmd = 'npm start'
 
 [variables]
 NODE_ENV = 'production'
-PORT = '3001'
 
 # Railway volume mount: /app (項目文件直接在根目錄)
 # 數據庫路徑: /app/server/database/database.db  
