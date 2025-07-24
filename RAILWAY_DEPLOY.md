@@ -4,20 +4,23 @@
 
 ### Railway 掛載結構
 ```
-/app/                           # Railway 工作目錄 (volume mount root)
+/app/                                    # Railway 工作目錄 (volume mount root)
+├── package.json                        # Node.js 配置
+├── nixpacks.toml                       # Railway 建構配置  
+├── railway.json                        # Railway 部署設定
 ├── server/
-│   ├── database/
-│   │   └── database.db        # SQLite 數據庫文件
-│   └── index.js               # 服務器入口
+│   ├── index.js                        # Express 服務器
+│   └── database/
+│       └── database.db                 # SQLite 數據庫文件
 ├── public/
-│   └── images/                # 靜態圖片資源
-├── dist/                      # 構建後的前端文件
-├── package.json
-└── nixpacks.toml
+│   └── images/                         # 靜態圖片資源 (34個產品圖片)
+├── dist/                               # 構建後的前端文件
+├── src/                                # React 源碼
+└── node_modules/                       # 依賴包
 ```
 
-### 關鍵路徑說明
-- **工作目錄**: `/app` (Railway 自動掛載)
+### 關鍵路徑說明  
+- **工作目錄**: `/app` (Railway 直接掛載 rick-morty-ecommerce git 倉庫)
 - **數據庫路徑**: `/app/server/database/database.db`
 - **靜態文件**: `/app/public/images/`  
 - **前端構建**: `/app/dist/`
@@ -71,14 +74,15 @@ Railway 的 **Volume Mount Path** 為 `/app`，重要文件路徑：
 /app/server/database/database.db-wal  # SQLite 預寫日誌
 
 # 靜態資源路徑：
-/app/public/images/                   # 產品圖片
+/app/public/images/                   # 產品圖片 (34個)
 /app/dist/                           # 前端構建文件
 ```
 
 ### 7. 注意事項
-- ✅ **Volume Mount**: 所有文件自動掛載到 `/app` 目錄
-- ✅ **數據持久化**: SQLite 數據庫文件永久保存
-- ✅ **靜態資源**: Express.js 提供圖片和前端文件服務
+- ✅ **Volume Mount**: rick-morty-ecommerce git 倉庫直接掛載到 `/app`
+- ✅ **工作目錄**: 所有命令在 `/app` 執行  
+- ✅ **數據持久化**: SQLite 數據庫文件永久保存在 Railway 持久存儲
+- ✅ **靜態資源**: Express.js 提供 34個產品圖片和前端文件服務
 - ✅ **SPA 路由**: 非 API 路由自動回傳 index.html
 - ✅ **環境變數**: PORT 由 Railway 自動分配
 - ⚠️  **WAL 模式**: SQLite 已啟用 WAL 模式提高併發性能 

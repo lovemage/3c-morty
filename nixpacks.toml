@@ -16,7 +16,7 @@ cmd = 'npm start'
 NODE_ENV = 'production'
 PORT = '3001'
 
-# Railway volume mount: /app (項目根目錄)
-# 數據庫路徑: /app/server/database/database.db
+# Railway volume mount: /app (直接掛載 rick-morty-ecommerce 倉庫)
+# 數據庫路徑: /app/server/database/database.db  
 # 靜態文件: /app/public/images/
 # 構建輸出: /app/dist/ 
