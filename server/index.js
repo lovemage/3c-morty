@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 // Routes
@@ -114,8 +115,8 @@ const startServer = async () => {
       console.log(`🏥 Health: http://0.0.0.0:${PORT}/api/health`);
       console.log(`🛍️ 環境: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 CORS Origin: ${process.env.NODE_ENV === 'production' ? (process.env.FRONTEND_URL || 'all origins') : 'development origins'}`);
-      console.log(`📁 Dist directory exists: ${require('fs').existsSync(path.join(__dirname, '../dist'))}`);
-      console.log(`📄 Index.html exists: ${require('fs').existsSync(path.join(__dirname, '../dist/index.html'))}`);
+      console.log(`📁 Dist directory exists: ${fs.existsSync(path.join(__dirname, '../dist'))}`);
+      console.log(`📄 Index.html exists: ${fs.existsSync(path.join(__dirname, '../dist/index.html'))}`);
     });
   } catch (error) {
     console.error('❌ 服務器啟動失敗:', error);
