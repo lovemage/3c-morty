@@ -1,22 +1,22 @@
 [phases.setup]
-nixPkgs = ['nodejs_20']
+nixPkgs = ['nodejs_20', 'python3']
 
 [phases.install]
 dependsOn = ['setup']
-cmds = ['cd rick-morty-ecommerce && npm ci']
+cmds = ['npm ci']
 
 [phases.build]
 dependsOn = ['install']
-cmds = ['cd rick-morty-ecommerce && npm run build']
+cmds = ['npm run build']
 
 [start]
-cmd = 'cd rick-morty-ecommerce && npm start'
+cmd = 'npm start'
 
 [variables]
 NODE_ENV = 'production'
 PORT = '3001'
 
-# Railway volume mount: /app (直接掛載 rick-morty-ecommerce 倉庫)
+# Railway volume mount: /app (項目文件直接在根目錄)
 # 數據庫路徑: /app/server/database/database.db  
 # 靜態文件: /app/public/images/
 # 構建輸出: /app/dist/ 
