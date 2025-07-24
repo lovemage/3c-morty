@@ -28,6 +28,16 @@
 
 ## 🚀 Railway 部署步驟
 
+### 📋 **部署方式選擇**
+
+#### **方式一: Nixpacks (推薦)**
+Railway 默認會使用 `nixpacks.toml` 配置自動構建
+
+#### **方式二: Docker (備用方案)**
+如果 Nixpacks 有問題，可以使用 Dockerfile：
+1. 在 Railway 專案設定中選擇 "Deploy from Docker"
+2. 或刪除 `nixpacks.toml` 讓 Railway 自動偵測 Dockerfile
+
 ### 1. 環境變數設定
 在 Railway 專案中設定以下環境變數：
 

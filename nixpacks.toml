@@ -1,8 +1,18 @@
 [phases.setup]
 nixPkgs = ['nodejs_20', 'python3']
 
-[phases.install]
+[phases.debug]
 dependsOn = ['setup']
+cmds = [
+  'pwd',
+  'ls -la',
+  'ls -la package.json || echo "package.json not found"',
+  'find . -name "package.json" -type f',
+  'echo "Current working directory contents:"'
+]
+
+[phases.install]
+dependsOn = ['debug']
 cmds = ['npm ci']
 
 [phases.build]
