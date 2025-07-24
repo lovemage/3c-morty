@@ -1,5 +1,28 @@
 # Railway 部署指南
 
+## 📁 **Volume Mount Path 配置**
+
+### Railway 掛載結構
+```
+/app/                           # Railway 工作目錄 (volume mount root)
+├── server/
+│   ├── database/
+│   │   └── database.db        # SQLite 數據庫文件
+│   └── index.js               # 服務器入口
+├── public/
+│   └── images/                # 靜態圖片資源
+├── dist/                      # 構建後的前端文件
+├── package.json
+└── nixpacks.toml
+```
+
+### 關鍵路徑說明
+- **工作目錄**: `/app` (Railway 自動掛載)
+- **數據庫路徑**: `/app/server/database/database.db`
+- **靜態文件**: `/app/public/images/`  
+- **前端構建**: `/app/dist/`
+- **環境變數 PORT**: Railway 自動分配
+
 ## 🚀 Railway 部署步驟
 
 ### 1. 環境變數設定
@@ -7,10 +30,10 @@
 
 ```
 NODE_ENV=production
-PORT=3001
 JWT_SECRET=your-super-secret-jwt-key-here
 FRONTEND_URL=https://your-app-name.railway.app
 ```
+**注意**: `PORT` 會由 Railway 自動設定，無需手動配置
 
 ### 2. 依賴項說明
 - **better-sqlite3**: 使用 v9.6.0 以確保與 Railway 的 Node.js 環境相容
@@ -38,7 +61,24 @@ rick-morty-ecommerce/
 - **資料庫**: SQLite (better-sqlite3) 本地文件存儲
 - **端口**: 使用 Railway 提供的 PORT 環境變數
 
-### 6. 注意事項
-- Railway 會自動偵測並使用 `npm start` 腳本
-- 靜態文件在生產環境中由 Express 提供服務
-- SPA 路由已正確配置，非 API 路由會回傳 index.html 
+### 6. 數據持久化 & Volume 配置
+Railway 的 **Volume Mount Path** 為 `/app`，重要文件路徑：
+
+```bash
+# Railway 持久化存儲：
+/app/server/database/database.db      # 主數據庫文件  
+/app/server/database/database.db-shm  # SQLite 共享內存
+/app/server/database/database.db-wal  # SQLite 預寫日誌
+
+# 靜態資源路徑：
+/app/public/images/                   # 產品圖片
+/app/dist/                           # 前端構建文件
+```
+
+### 7. 注意事項
+- ✅ **Volume Mount**: 所有文件自動掛載到 `/app` 目錄
+- ✅ **數據持久化**: SQLite 數據庫文件永久保存
+- ✅ **靜態資源**: Express.js 提供圖片和前端文件服務
+- ✅ **SPA 路由**: 非 API 路由自動回傳 index.html
+- ✅ **環境變數**: PORT 由 Railway 自動分配
+- ⚠️  **WAL 模式**: SQLite 已啟用 WAL 模式提高併發性能 
