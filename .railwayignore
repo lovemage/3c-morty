@@ -1,0 +1,11 @@
+# Railway 忽略文件 - 避免誤識別為靜態網站
+dist-backup/
+*.log
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 確保 Railway 識別為 Node.js 應用
+# 不要忽略 package.json, nixpacks.toml, Procfile 
