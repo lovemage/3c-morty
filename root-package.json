@@ -1,0 +1,13 @@
+{
+  "name": "rick-morty-ecommerce-root",
+  "version": "1.0.0",
+  "description": "Root package for Railway deployment",
+  "scripts": {
+    "start": "cd rick-morty-ecommerce && npm start",
+    "build": "cd rick-morty-ecommerce && npm run build",
+    "install": "cd rick-morty-ecommerce && npm install"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

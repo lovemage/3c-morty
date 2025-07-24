@@ -1,18 +1,8 @@
 [phases.setup]
-nixPkgs = ['nodejs_20', 'python3']
-
-[phases.debug]
-dependsOn = ['setup']
-cmds = [
-  'pwd',
-  'ls -la',
-  'ls -la rick-morty-ecommerce/package.json || echo "package.json not found"',
-  'find . -name "package.json" -type f',
-  'echo "Current working directory contents:"'
-]
+nixPkgs = ['nodejs_20']
 
 [phases.install]
-dependsOn = ['debug']
+dependsOn = ['setup']
 cmds = ['cd rick-morty-ecommerce && npm ci']
 
 [phases.build]
