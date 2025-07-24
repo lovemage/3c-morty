@@ -14,12 +14,13 @@ export function Search() {
   const [loading, setLoading] = useState(false);
 
   const categoryNames = {
-    mouse: '滑鼠',
-    keyboard: '鍵盤',
-    cable: '傳輸線',
-    powerbank: '行動電源',
-    laptop: '筆記型電腦'
-  };
+  mouse: '滑鼠',
+  keyboard: '鍵盤', 
+  cable: '傳輸線',
+  powerbank: '行動電源',
+  laptop: '筆記型電腦',
+  juicer: '果汁機/破壁機'
+};
 
   useEffect(() => {
     const searchQuery = searchParams.get('q');

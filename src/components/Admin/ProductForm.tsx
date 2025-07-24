@@ -149,13 +149,23 @@ export function ProductForm({ product, onClose, onSave }: ProductFormProps) {
     }));
   };
 
-  const categoryNames = {
-    mouse: '滑鼠',
-    keyboard: '鍵盤',
-    cable: '傳輸線',
-    powerbank: '行動電源',
-    laptop: '筆記型電腦'
-  };
+  const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
+  
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -200,8 +210,9 @@ export function ProductForm({ product, onClose, onSave }: ProductFormProps) {
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
                   className="rm-input"
                 >
-                  {Object.entries(categoryNames).map(([key, name]) => (
-                    <option key={key} value={key}>{name}</option>
+                  <option value="">請選擇分類</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
                 </select>
               </div>

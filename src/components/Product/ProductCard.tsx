@@ -1,10 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
-import { Product } from '../../lib/localStorage';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+
+interface Product {
+  id: number | string;
+  name: string;
+  category: string;
+  price: number;
+  original_price?: number;
+  originalPrice?: number;
+  description: string;
+  specifications: string[];
+  specifications2?: string[];
+  stock: number;
+  image: string;
+  featured?: number | boolean;
+}
 
 interface ProductCardProps {
   product: Product;
@@ -20,7 +34,7 @@ export function ProductCard({ product }: ProductCardProps) {
       toast.error('請先登入才能加入購物車');
       return;
     }
-    addToCart(product.id);
+    addToCart(String(product.id));
   };
 
   const formatPrice = (price: number) => {
@@ -75,14 +89,21 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Specifications - Fixed Height */}
           <div className="flex flex-wrap gap-1 mb-2 h-6 overflow-hidden">
-            {product.specifications.slice(0, 2).map((spec, index) => (
-              <span
-                key={index}
-                className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-mono border border-gray-300 h-5 flex items-center"
-              >
-                {spec}
-              </span>
-            ))}
+            {(() => {
+              const specs = Array.isArray(product.specifications) 
+                ? product.specifications 
+                : typeof product.specifications === 'string' 
+                  ? JSON.parse(product.specifications || '[]') 
+                  : [];
+              return specs.slice(0, 2).map((spec: string, index: number) => (
+                <span
+                  key={index}
+                  className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-mono border border-gray-300 h-5 flex items-center"
+                >
+                  {spec}
+                </span>
+              ));
+            })()}
           </div>
         </div>
       </Link>
@@ -94,13 +115,13 @@ export function ProductCard({ product }: ProductCardProps) {
           <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 flex-shrink-0">
             {formatPrice(product.price)}
           </span>
-          {product.originalPrice > product.price && (
+          {((product.original_price || product.originalPrice) && (product.original_price || product.originalPrice)! > product.price) && (
             <div className="flex items-center space-x-1 overflow-hidden">
               <span className="text-gray-500 line-through text-sm whitespace-nowrap">
-                {formatPrice(product.originalPrice)}
+                {formatPrice(product.original_price || product.originalPrice!)}
               </span>
               <span className="bg-red-500 text-white px-1 py-0.5 rounded text-xs font-bold whitespace-nowrap">
-                -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                -{Math.round((((product.original_price || product.originalPrice)! - product.price) / (product.original_price || product.originalPrice)!) * 100)}%
               </span>
             </div>
           )}

@@ -47,8 +47,20 @@ export function Login() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 rm-portal flex items-center justify-center text-2xl font-bold">
-            R&M
+          <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+            <img 
+              src="/images/others/logo.png"
+              alt="Corba 3C Shop Logo" 
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="w-20 h-20 rm-portal flex items-center justify-center text-2xl font-bold hidden">
+              Corba
+            </div>
           </div>
           <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-gray-800 mb-2">
             歡迎回來
@@ -74,7 +86,6 @@ export function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="rm-input pl-12"
-                  placeholder="輸入您的電子郵件"
                   required
                 />
               </div>
@@ -93,7 +104,6 @@ export function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="rm-input pl-12 pr-12"
-                  placeholder="輸入您的密碼"
                   required
                 />
                 <button

@@ -3,7 +3,7 @@
 export interface Product {
   id: string;
   name: string;
-  category: 'mouse' | 'keyboard' | 'cable' | 'powerbank' | 'laptop';
+  category: 'mouse' | 'keyboard' | 'cable' | 'powerbank' | 'laptop' | 'juicer';
   price: number;
   originalPrice: number;
   description: string;
@@ -30,6 +30,7 @@ export interface User {
   name: string;
   role: 'user' | 'admin';
   createdAt: string;
+  lastLoginAt?: string;
 }
 
 export interface Order {
@@ -161,8 +162,13 @@ class LocalStorageManager {
       throw new Error('郵箱或密碼錯誤');
     }
     
-    this.setCurrentUser(user);
-    return user;
+    // 更新最後登入時間
+    this.updateUserLastLogin(user.id);
+    
+    // 獲取更新後的用戶資料
+    const updatedUser = this.getUsers().find(u => u.id === user.id) || user;
+    this.setCurrentUser(updatedUser);
+    return updatedUser;
   }
 
   getCurrentUser(): User | null {
@@ -177,6 +183,30 @@ class LocalStorageManager {
   logout(): void {
     localStorage.removeItem(this.KEYS.CURRENT_USER);
     localStorage.removeItem(this.KEYS.CART);
+  }
+
+  deleteUser(userId: string): void {
+    const users = this.getUsers();
+    const filteredUsers = users.filter(u => u.id !== userId);
+    this.saveUsers(filteredUsers);
+  }
+
+  updateUserRole(userId: string, newRole: 'user' | 'admin'): void {
+    const users = this.getUsers();
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex !== -1) {
+      users[userIndex].role = newRole;
+      this.saveUsers(users);
+    }
+  }
+
+  updateUserLastLogin(userId: string): void {
+    const users = this.getUsers();
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex !== -1) {
+      users[userIndex].lastLoginAt = new Date().toISOString();
+      this.saveUsers(users);
+    }
   }
 
   // Cart

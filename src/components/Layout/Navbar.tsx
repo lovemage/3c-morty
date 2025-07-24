@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, Menu, X, Settings } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Settings } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 
@@ -9,16 +9,6 @@ export function Navbar() {
   const { getCartItemsCount } = useCart();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
-      setIsMenuOpen(false);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -34,46 +24,29 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <div className="w-10 h-10 flex items-center justify-center">
+            <div className="w-14 h-14 flex items-center justify-center">
                           <img 
-              src="/images/products/logo-3.png"
-              alt="Rick & Morty Logo" 
-                className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110"
+              src="/images/others/logo.png"
+              alt="Corba 3C Shop Logo" 
+                className="w-14 h-14 object-contain transition-transform duration-300 group-hover:scale-110"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   target.nextElementSibling?.classList.remove('hidden');
                 }}
               />
-              <div className="w-10 h-10 rm-portal flex items-center justify-center text-dark font-bold text-lg hidden">
-                R&M
+              <div className="w-14 h-14 rm-portal flex items-center justify-center text-dark font-bold text-lg hidden">
+                Corba
               </div>
             </div>
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400 rm-text-glow">
-                Rick & Morty 3C
+                Corba 3C Shop
               </h1>
             </div>
           </Link>
 
-          {/* Search Bar - Desktop */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <form onSubmit={handleSearch} className="relative w-full">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜尋產品..."
-                className="rm-input pr-12"
-              />
-              <button
-                type="submit"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400 hover:text-green-300 transition-colors"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-            </form>
-          </div>
+
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
@@ -134,22 +107,7 @@ export function Navbar() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-700">
-            {/* Mobile Search */}
-            <form onSubmit={handleSearch} className="relative mb-4">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜尋產品..."
-                className="rm-input pr-12"
-              />
-              <button
-                type="submit"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-            </form>
+
 
             <div className="space-y-2">
               <Link

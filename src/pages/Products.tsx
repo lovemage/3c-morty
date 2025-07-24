@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Filter, ChevronDown } from 'lucide-react';
-import { Product, storage } from '../lib/localStorage';
 import { ProductCard } from '../components/Product/ProductCard';
+
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  original_price: number;
+  description: string;
+  specifications: string[];
+  specifications2: string[];
+  stock: number;
+  image: string;
+  featured?: number;
+}
 
 export function Products() {
   const { category } = useParams<{ category?: string }>();
@@ -14,25 +27,39 @@ export function Products() {
   const [loading, setLoading] = useState(true);
 
   const categoryNames = {
-    mouse: '滑鼠',
-    keyboard: '鍵盤',
-    cable: '傳輸線',
-    powerbank: '行動電源',
-    laptop: '筆記型電腦'
-  };
+  mouse: '滑鼠',
+  keyboard: '鍵盤', 
+  cable: '傳輸線',
+  powerbank: '行動電源',
+  laptop: '筆記型電腦',
+  juicer: '果汁機/破壁機'
+};
 
   useEffect(() => {
-    setLoading(true);
-    let allProducts = storage.getProducts();
-    
-    if (category) {
-      allProducts = allProducts.filter(p => p.category === category);
-    }
-    
-    setProducts(allProducts);
-    
-    setLoading(false);
+    fetchProducts();
   }, [category]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const url = category ? `/api/products?category=${category}` : '/api/products';
+      const response = await fetch(url);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const products = data.products || data;
+        setProducts(products);
+      } else {
+        console.error('Failed to fetch products');
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let filtered = [...products];

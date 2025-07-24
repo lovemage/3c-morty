@@ -10,11 +10,14 @@ import {
   Plus,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  User,
+  Tag
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { storage } from '../lib/localStorage';
 import { ProductForm } from '../components/Admin/ProductForm';
+import { CategoryManager } from '../components/Admin/CategoryManager';
 import toast from 'react-hot-toast';
 
 // Admin Dashboard Component
@@ -115,6 +118,194 @@ function AdminDashboard() {
   );
 }
 
+// Admin Users Management Component
+function AdminUsers() {
+  const [users, setUsers] = useState(storage.getUsers());
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('zh-TW', {
+      year: 'numeric',
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (window.confirm('確定要刪除這個用戶嗎？')) {
+      storage.deleteUser(userId);
+      setUsers(storage.getUsers());
+      toast.success('用戶已刪除');
+    }
+  };
+
+  const handleToggleRole = (userId: string, currentRole: string) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    if (window.confirm(`確定要將該用戶角色變更為${newRole === 'admin' ? '管理員' : '一般用戶'}嗎？`)) {
+      storage.updateUserRole(userId, newRole);
+      setUsers(storage.getUsers());
+      toast.success('用戶角色已更新');
+    }
+  };
+
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getUserOrderCount = (userId: string) => {
+    return storage.getUserOrders(userId).length;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-yellow-400">成員管理</h2>
+        <div className="text-sm text-gray-400">
+          共 {users.length} 位成員
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="rm-card">
+        <div className="mb-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="搜尋用戶姓名或電子郵件..."
+            className="rm-input w-full max-w-md"
+          />
+        </div>
+      </div>
+
+      {/* Users Table */}
+      <div className="rm-card">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left py-3 px-4 text-gray-300">用戶資訊</th>
+                <th className="text-left py-3 px-4 text-gray-300">角色</th>
+                <th className="text-left py-3 px-4 text-gray-300">訂單數量</th>
+                <th className="text-left py-3 px-4 text-gray-300">註冊時間</th>
+                <th className="text-left py-3 px-4 text-gray-300">最後登入</th>
+                <th className="text-left py-3 px-4 text-gray-300">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{user.name}</p>
+                        <p className="text-gray-400 text-sm">{user.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                      user.role === 'admin' 
+                        ? 'bg-purple-400/20 text-purple-400' 
+                        : 'bg-green-400/20 text-green-400'
+                    }`}>
+                      {user.role === 'admin' ? '管理員' : '一般用戶'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-white font-medium">
+                      {getUserOrderCount(user.id)} 筆
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-gray-400 text-sm">
+                    {formatDate(user.createdAt)}
+                  </td>
+                  <td className="py-3 px-4 text-gray-400 text-sm">
+                    {user.lastLoginAt ? formatDate(user.lastLoginAt) : '從未登入'}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleToggleRole(user.id, user.role)}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          user.role === 'admin'
+                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                            : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                        }`}
+                        title={user.role === 'admin' ? '設為一般用戶' : '設為管理員'}
+                      >
+                        {user.role === 'admin' ? '降級' : '升級'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                        title="刪除用戶"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-8 text-gray-400">
+            {searchTerm ? '沒有找到匹配的用戶' : '沒有用戶資料'}
+          </div>
+        )}
+      </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="rm-card bg-gradient-to-r from-blue-400/10 to-blue-600/10 border border-blue-400/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-400 text-sm font-medium">管理員</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {users.filter(u => u.role === 'admin').length}
+              </p>
+            </div>
+            <Settings className="w-8 h-8 text-blue-400" />
+          </div>
+        </div>
+        
+        <div className="rm-card bg-gradient-to-r from-green-400/10 to-green-600/10 border border-green-400/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-400 text-sm font-medium">一般用戶</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {users.filter(u => u.role === 'user').length}
+              </p>
+            </div>
+            <Users className="w-8 h-8 text-green-400" />
+          </div>
+        </div>
+
+        <div className="rm-card bg-gradient-to-r from-yellow-400/10 to-orange-500/10 border border-yellow-400/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-400 text-sm font-medium">活躍用戶</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {users.filter(u => u.lastLoginAt).length}
+              </p>
+            </div>
+            <TrendingUp className="w-8 h-8 text-yellow-400" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Admin Products Management Component
 function AdminProducts() {
   const [products, setProducts] = useState(storage.getProducts());
@@ -166,7 +357,8 @@ function AdminProducts() {
       keyboard: '鍵盤',
       cable: '傳輸線',
       powerbank: '行動電源',
-      laptop: '筆記型電腦'
+      laptop: '筆記型電腦',
+      juicer: '果汁機/破壁機'
     };
     return categoryNames[category as keyof typeof categoryNames] || category;
   };
@@ -317,6 +509,7 @@ export function Admin() {
   const menuItems = [
     { id: 'dashboard', name: '儀表板', icon: LayoutDashboard },
     { id: 'products', name: '產品管理', icon: Package },
+    { id: 'categories', name: '分類管理', icon: Tag },
     { id: 'users', name: '用戶管理', icon: Users },
     { id: 'orders', name: '訂單管理', icon: ShoppingCart },
     { id: 'settings', name: '系統設定', icon: Settings }
@@ -326,7 +519,7 @@ export function Admin() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-gray-800 mb-2">
-          Rick & Morty 管理後台
+          Corba 3C Shop 管理後台
         </h1>
         <p className="text-gray-600">歡迎，{user.name}！管理您的次元電商帝國。</p>
       </div>
@@ -357,12 +550,8 @@ export function Admin() {
         <div className="lg:col-span-4">
           {activeTab === 'dashboard' && <AdminDashboard />}
           {activeTab === 'products' && <AdminProducts />}
-          {activeTab === 'users' && (
-            <div className="rm-card">
-              <h2 className="text-2xl font-bold text-green-400 mb-4">用戶管理</h2>
-              <p className="text-gray-400">用戶管理功能正在開發中...</p>
-            </div>
-          )}
+          {activeTab === 'categories' && <CategoryManager />}
+          {activeTab === 'users' && <AdminUsers />}
           {activeTab === 'orders' && (
             <div className="rm-card">
               <h2 className="text-2xl font-bold text-green-400 mb-4">訂單管理</h2>

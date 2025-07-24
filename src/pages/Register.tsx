@@ -8,11 +8,9 @@ export function Register() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    confirmPassword: ''
+    password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -27,19 +25,14 @@ export function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    // 簡化驗證
+    if (!formData.name || !formData.email || !formData.password) {
       toast.error('請填寫所有欄位');
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('密碼與確認密碼不一致');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error('密碼至少需要 6 個字元');
+    if (formData.password.length < 4) {
+      toast.error('密碼至少需要 4 個字元');
       return;
     }
 
@@ -63,8 +56,20 @@ export function Register() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 rm-portal flex items-center justify-center text-2xl font-bold">
-            R&M
+          <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+            <img 
+              src="/images/others/logo.png"
+              alt="Corba 3C Shop Logo" 
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="w-20 h-20 rm-portal flex items-center justify-center text-2xl font-bold hidden">
+              Corba
+            </div>
           </div>
           <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-gray-800 mb-2">
             加入我們
@@ -91,7 +96,6 @@ export function Register() {
                   value={formData.name}
                   onChange={handleChange}
                   className="rm-input pl-12"
-                  placeholder="輸入您的姓名"
                   required
                 />
               </div>
@@ -111,7 +115,6 @@ export function Register() {
                   value={formData.email}
                   onChange={handleChange}
                   className="rm-input pl-12"
-                  placeholder="輸入您的電子郵件"
                   required
                 />
               </div>
@@ -131,7 +134,6 @@ export function Register() {
                   value={formData.password}
                   onChange={handleChange}
                   className="rm-input pl-12 pr-12"
-                  placeholder="輸入密碼（至少6個字元）"
                   required
                 />
                 <button
@@ -144,32 +146,7 @@ export function Register() {
               </div>
             </div>
 
-            {/* Confirm Password Field */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                確認密碼
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="rm-input pl-12 pr-12"
-                  placeholder="再次輸入密碼"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
+            {/* 移除確認密碼欄位，簡化註冊流程 */}
 
             {/* Submit Button */}
             <button

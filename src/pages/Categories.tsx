@@ -1,53 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { storage } from '../lib/localStorage';
+import { useCategories } from '../hooks/useCategories';
+
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  original_price: number;
+  description: string;
+  stock: number;
+  image: string;
+  featured?: number;
+}
 
 export function Categories() {
-  const products = storage.getProducts();
-  
-  const categories = [
-    {
-      id: 'mouse',
-      name: '滑鼠',
-      icon: '🖱️',
-      description: '精準操作，量子級定位技術',
-      gradient: 'from-green-400 to-green-600',
-      count: products.filter(p => p.category === 'mouse').length
-    },
-    {
-      id: 'keyboard',
-      name: '鍵盤',
-      icon: '⌨️',
-      description: '打字体驗，次元穩定軸體',
-      gradient: 'from-blue-400 to-blue-600',
-      count: products.filter(p => p.category === 'keyboard').length
-    },
-    {
-      id: 'cable',
-      name: '傳輸線',
-      icon: '🔌',
-      description: '快速傳輸，跨維度連接',
-      gradient: 'from-purple-400 to-purple-600',
-      count: products.filter(p => p.category === 'cable').length
-    },
-    {
-      id: 'powerbank',
-      name: '行動電源',
-      icon: '🔋',
-      description: '電力供應，量子能量技術',
-      gradient: 'from-orange-400 to-red-500',
-      count: products.filter(p => p.category === 'powerbank').length
-    },
-    {
-      id: 'laptop',
-      name: '筆記型電腦',
-      icon: '💻',
-      description: '絕佳效能，次元處理器',
-      gradient: 'from-cyan-400 to-teal-500',
-      count: products.filter(p => p.category === 'laptop').length
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const { categories: categoryData, loading } = useCategories();
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setLoadingProducts(false);
     }
-  ];
+  };
+  
+  const categories = categoryData.map(category => ({
+    ...category,
+    count: products.filter(p => p.category === category.id).length
+  }));
+
+  if (loading || loadingProducts) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-light">
+        <div className="rm-loading w-8 h-8"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
