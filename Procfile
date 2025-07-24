@@ -1,1 +1,1 @@
-web: ./start.sh 
+web: cd /app && npm start 
