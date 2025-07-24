@@ -7,7 +7,9 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "vite",
     "server": "nodemon server/index.js",
+    "start": "node server/index.js",
     "build": "tsc && vite build",
+    "postbuild": "echo 'Build completed successfully'",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

@@ -32,7 +32,9 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
   credentials: true
 }));
 
@@ -42,6 +44,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files for product images
 app.use('/images', express.static(path.join(__dirname, '../public/images')));
+
+// Serve static files from dist directory in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../dist')));
+}
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -70,13 +77,29 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: true,
-    message: '找不到請求的API端點'
+// SPA fallback for production - serve index.html for non-API routes
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // If it's an API route, return 404 JSON
+    if (req.path.startsWith('/api/')) {
+      res.status(404).json({
+        error: true,
+        message: '找不到請求的API端點'
+      });
+    } else {
+      // For all other routes, serve the React app
+      res.sendFile(path.join(__dirname, '../dist/index.html'));
+    }
   });
-});
+} else {
+  // 404 handler for development
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      error: true,
+      message: '找不到請求的API端點'
+    });
+  });
+}
 
 // Initialize database and start server
 const startServer = async () => {
