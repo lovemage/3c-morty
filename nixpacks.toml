@@ -6,20 +6,22 @@ node = "nodejs_20"
 
 [phases.install]
 dependsOn = ['setup']
-cmds = ['npm ci']
+cmds = [
+  'echo "📦 安裝依賴 (準備構建)："',
+  'npm ci'
+]
 
 [phases.build]
-dependsOn = ['install']
+dependsOn = ['install'] 
 cmds = [
+  'echo "🔨 構建前端："',
   'npm run build',
-  'echo "Build completed - checking files:"',
-  'ls -la dist/',
-  'echo "Index.html content:"',
-  'head -5 dist/index.html'
+  'echo "✅ 構建完成，準備啟動腳本："',
+  'chmod +x start.sh'
 ]
 
 [start]
-cmd = 'npm start'
+cmd = './start.sh'
 
 [deploy]
 type = "node"
