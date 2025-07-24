@@ -27,7 +27,10 @@ type = "node"
 [variables]
 NODE_ENV = 'production'
 
-# Railway volume mount: /app (項目文件直接在根目錄)
+# Railway 根目錄配置 - 所有文件在 /app 根目錄
+# 不使用子目錄：rick-morty-ecommerce
+# 項目根目錄: /app
 # 數據庫路徑: /app/server/database/database.db  
 # 靜態文件: /app/public/images/
-# 構建輸出: /app/dist/ 
+# 構建輸出: /app/dist/
+# 啟動文件: /app/server/index.js 
