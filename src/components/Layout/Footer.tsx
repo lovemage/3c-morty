@@ -104,15 +104,6 @@ export function Footer() {
               </li>
               <li>
                 <a 
-                  href="tel:0958213165"
-                  className="text-gray-400 hover:text-yellow-400 transition-colors py-1 block flex items-center justify-center md:justify-start"
-                >
-                  <Phone className="w-4 h-4 mr-2" />
-                  0958-213-165
-                </a>
-              </li>
-              <li>
-                <a 
                   href="mailto:kusoboy210@gmail.com"
                   className="text-gray-400 hover:text-yellow-400 transition-colors py-1 block flex items-center justify-center md:justify-start"
                 >
