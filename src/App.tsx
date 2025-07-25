@@ -15,6 +15,7 @@ import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
 import { Admin } from './pages/Admin';
 import { Search } from './pages/Search';
+import { Contact } from './pages/Contact';
 import { NotFound } from './pages/NotFound';
 import './index.css';
 
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/admin/*" element={<Admin />} />
                 <Route path="/search" element={<Search />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

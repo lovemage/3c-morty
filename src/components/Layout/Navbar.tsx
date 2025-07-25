@@ -56,6 +56,9 @@ export function Navbar() {
             <Link to="/categories" className="nav-link">
               分類
             </Link>
+            <Link to="/contact" className="nav-link">
+              聯絡我們
+            </Link>
             
             {user ? (
               <div className="flex items-center space-x-4">
@@ -123,6 +126,13 @@ export function Navbar() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 分類
+              </Link>
+              <Link
+                to="/contact"
+                className="block py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-800 rounded transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                聯絡我們
               </Link>
               
               {user ? (
