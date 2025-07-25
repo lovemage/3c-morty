@@ -17,6 +17,8 @@ import { Admin } from './pages/Admin';
 import { Search } from './pages/Search';
 import { Contact } from './pages/Contact';
 import { Careers } from './pages/Careers';
+import { Privacy } from './pages/Privacy';
+import { Terms } from './pages/Terms';
 import { NotFound } from './pages/NotFound';
 import './index.css';
 
@@ -43,6 +45,8 @@ function App() {
                 <Route path="/search" element={<Search />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/careers" element={<Careers />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
