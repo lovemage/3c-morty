@@ -77,8 +77,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-gray-400 hover:text-yellow-400 transition-colors py-1 block">
-                  關於我們
+                <Link to="/careers" className="text-gray-400 hover:text-yellow-400 transition-colors py-1 block">
+                  人才招募
                 </Link>
               </li>
               <li>
