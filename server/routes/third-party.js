@@ -148,7 +148,7 @@ router.post('/barcode/create',
  * GET /api/third-party/orders/:orderId/status
  * 查詢訂單狀態
  */
-router.get('/orders/:orderId/status', apiKeyAuth, apiCallLogger, (req, res) => {
+router.get('/orders/:orderId/status', apiKeyAuth, apiCallLogger, async (req, res) => {
   try {
     const { orderId } = req.params;
 
@@ -196,7 +196,7 @@ router.get('/orders/:orderId/status', apiKeyAuth, apiCallLogger, (req, res) => {
  * GET /api/third-party/orders
  * 查詢訂單列表
  */
-router.get('/orders', apiKeyAuth, apiCallLogger, (req, res) => {
+router.get('/orders', apiKeyAuth, apiCallLogger, async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
