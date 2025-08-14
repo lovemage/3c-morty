@@ -63,17 +63,27 @@ router.post('/barcode/create',
     }
 
     // 檢查是否已存在相同的外部訂單號
+    console.log('🔍 檢查訂單號重複:', {
+      client_order_id,
+      client_system: req.clientInfo.system
+    });
+    
     const existingOrder = await getAsync(
       'SELECT id FROM third_party_orders WHERE external_order_id = ? AND client_system = ?',
       [client_order_id, req.clientInfo.system]
     );
+    
+    console.log('📊 查詢結果:', existingOrder);
 
     if (existingOrder) {
+      console.log('❌ 訂單號衝突:', existingOrder);
       return res.status(409).json({
         error: true,
         message: '訂單號已存在'
       });
     }
+    
+    console.log('✅ 訂單號檢查通過，繼續建立訂單');
 
     // 建立第三方訂單記錄
     const result = await runSQL(`
