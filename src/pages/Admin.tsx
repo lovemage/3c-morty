@@ -943,13 +943,17 @@ function AdminThirdPartyOrders() {
       
       if (response.ok) {
         const data = await response.json();
-        setOrders(data.data.orders);
+        // 確保 orders 始終是陣列
+        const ordersList = data.data?.orders || [];
+        setOrders(Array.isArray(ordersList) ? ordersList : []);
       } else {
         toast.error('無法載入訂單列表');
+        setOrders([]); // 設為空陣列以防止錯誤
       }
     } catch (error) {
       console.error('Fetch orders error:', error);
       toast.error('載入失敗');
+      setOrders([]); // 設為空陣列以防止錯誤
     } finally {
       setLoading(false);
     }
@@ -1018,7 +1022,7 @@ function AdminThirdPartyOrders() {
   };
 
   // 過濾訂單（客戶端搜尋）
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = (Array.isArray(orders) ? orders : []).filter(order => {
     if (!filters.search) return true;
     const search = filters.search.toLowerCase();
     return (
