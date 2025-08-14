@@ -63,7 +63,7 @@ router.post('/barcode/create',
     }
 
     // 檢查是否已存在相同的外部訂單號
-    const existingOrder = getAsync(
+    const existingOrder = await getAsync(
       'SELECT id FROM third_party_orders WHERE external_order_id = ? AND client_system = ?',
       [client_order_id, req.clientInfo.system]
     );
@@ -76,7 +76,7 @@ router.post('/barcode/create',
     }
 
     // 建立第三方訂單記錄
-    const result = runSQL(`
+    const result = await runSQL(`
       INSERT INTO third_party_orders (
         external_order_id, client_system, amount, product_info, callback_url, status
       ) VALUES (?, ?, ?, ?, ?, 'pending')
@@ -100,19 +100,19 @@ router.post('/barcode/create',
 
     if (!ecpayResult.success) {
       // 如果綠界建立失敗，刪除剛建立的訂單
-      runSQL('DELETE FROM third_party_orders WHERE id = ?', [thirdPartyOrderId]);
+      await runSQL('DELETE FROM third_party_orders WHERE id = ?', [thirdPartyOrderId]);
       throw new Error(ecpayResult.message || '綠界BARCODE訂單建立失敗');
     }
 
     // 更新訂單資訊
-    runSQL(`
+    await runSQL(`
       UPDATE third_party_orders 
       SET payment_code = ?, payment_url = ?, expire_date = ?
       WHERE id = ?
     `, [ecpayResult.barcode, ecpayResult.paymentUrl, ecpayResult.expireDate, thirdPartyOrderId]);
 
     // 記錄綠界交易
-    runSQL(`
+    await runSQL(`
       INSERT INTO ecpay_transactions (
         third_party_order_id, merchant_trade_no, amount, payment_type, response_code, response_msg, raw_response
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -152,7 +152,7 @@ router.get('/orders/:orderId/status', apiKeyAuth, apiCallLogger, (req, res) => {
   try {
     const { orderId } = req.params;
 
-    const order = getAsync(`
+    const order = await getAsync(`
       SELECT tpo.*, et.merchant_trade_no, et.payment_date, et.payment_type
       FROM third_party_orders tpo
       LEFT JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
@@ -209,7 +209,7 @@ router.get('/orders', apiKeyAuth, apiCallLogger, (req, res) => {
       params.push(status);
     }
 
-    const orders = allAsync(`
+    const orders = await allAsync(`
       SELECT tpo.*, et.merchant_trade_no, et.payment_date, et.payment_type
       FROM third_party_orders tpo
       LEFT JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
@@ -219,7 +219,7 @@ router.get('/orders', apiKeyAuth, apiCallLogger, (req, res) => {
     `, [...params, parseInt(limit), parseInt(offset)]);
 
     // 取得總數
-    const totalResult = getAsync(`
+    const totalResult = await getAsync(`
       SELECT COUNT(*) as total
       FROM third_party_orders tpo
       ${whereClause}
