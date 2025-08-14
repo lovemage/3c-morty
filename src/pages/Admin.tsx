@@ -600,9 +600,9 @@ function AdminApiKeys() {
     }
   };
 
-  // Delete/Deactivate API key
-  const handleDeleteApiKey = async (keyId) => {
-    if (!window.confirm('確定要停用這個 API Key 嗎？')) return;
+  // Deactivate API key (soft delete)
+  const handleDeactivateApiKey = async (keyId) => {
+    if (!window.confirm('確定要停用這個 API Key 嗎？停用後可以重新啟用。')) return;
     
     try {
       const token = localStorage.getItem('auth_token');
@@ -614,15 +614,56 @@ function AdminApiKeys() {
       });
       
       if (response.ok) {
-        toast.success('API Key 已停用');
+        const result = await response.json();
+        toast.success(result.message);
         fetchApiKeys();
       } else {
         const error = await response.json();
         toast.error(error.message || '停用失敗');
       }
     } catch (error) {
-      console.error('Delete API key error:', error);
+      console.error('Deactivate API key error:', error);
       toast.error('停用失敗');
+    }
+  };
+
+  // Permanently delete API key
+  const handleDeleteApiKey = async (keyId, keyName) => {
+    const confirmText = `永久刪除 API Key "${keyName}"`;
+    const userInput = prompt(
+      `⚠️ 警告：這是不可逆的操作！\n\n` +
+      `永久刪除會完全移除 API Key 記錄，無法恢復。\n` +
+      `如果該 API Key 有關聯的第三方訂單，刪除將會失敗。\n\n` +
+      `請輸入以下文字確認：\n"${confirmText}"`
+    );
+    
+    if (userInput !== confirmText) {
+      if (userInput !== null) {
+        toast.error('確認文字不正確，取消刪除');
+      }
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/admin/api-keys/${keyId}?permanent=true`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(result.message);
+        fetchApiKeys();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || '刪除失敗');
+      }
+    } catch (error) {
+      console.error('Delete API key error:', error);
+      toast.error('刪除失敗');
     }
   };
 
@@ -764,17 +805,28 @@ function AdminApiKeys() {
                         onClick={() => handleUpdateApiKey(apiKey.id, { is_active: !apiKey.is_active })}
                         className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                           apiKey.is_active
-                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                            ? 'bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/30'
                             : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                         }`}
                         title={apiKey.is_active ? '停用' : '啟用'}
                       >
                         {apiKey.is_active ? '停用' : '啟用'}
                       </button>
+                      
+                      {/* 軟刪除按鈕 */}
                       <button
-                        onClick={() => handleDeleteApiKey(apiKey.id)}
+                        onClick={() => handleDeactivateApiKey(apiKey.id)}
+                        className="px-3 py-1 rounded text-xs font-medium bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors"
+                        title="停用 API Key"
+                      >
+                        禁用
+                      </button>
+                      
+                      {/* 永久刪除按鈕 */}
+                      <button
+                        onClick={() => handleDeleteApiKey(apiKey.id, apiKey.key_name)}
                         className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                        title="刪除"
+                        title="永久刪除 (不可恢復)"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

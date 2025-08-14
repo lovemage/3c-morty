@@ -187,11 +187,12 @@ router.put('/api-keys/:keyId', adminAuth, async (req, res) => {
 
 /**
  * DELETE /api/admin/api-keys/:keyId
- * 刪除 API Key
+ * 刪除 API Key (永久刪除)
  */
 router.delete('/api-keys/:keyId', adminAuth, async (req, res) => {
   try {
     const { keyId } = req.params;
+    const { permanent } = req.query; // 查詢參數決定是否永久刪除
 
     // 檢查 API Key 是否存在
     const existingKey = await getAsync('SELECT * FROM api_keys WHERE id = ?', [keyId]);
@@ -202,25 +203,59 @@ router.delete('/api-keys/:keyId', adminAuth, async (req, res) => {
       });
     }
 
-    // 軟刪除：設為非活動狀態
-    await runSQL('UPDATE api_keys SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [keyId]);
+    // 檢查是否有關聯的第三方訂單
+    const relatedOrders = await getAsync(`
+      SELECT COUNT(*) as count 
+      FROM third_party_orders 
+      WHERE client_system = ?
+    `, [existingKey.client_system]);
 
-    // 記錄安全日誌
-    securityLog('warn', 'API Key 已停用', req, {
-      admin_id: req.admin.id,
-      key_id: keyId,
-      key_name: existingKey.key_name
-    });
+    if (permanent === 'true') {
+      // 永久刪除
+      if (relatedOrders.count > 0) {
+        return res.status(400).json({
+          error: true,
+          message: `無法永久刪除：該 API Key 關聯了 ${relatedOrders.count} 筆第三方訂單。請先處理相關訂單或使用停用功能。`
+        });
+      }
 
-    res.json({
-      success: true,
-      message: 'API Key 已停用'
-    });
+      // 真正刪除記錄
+      await runSQL('DELETE FROM api_keys WHERE id = ?', [keyId]);
+
+      // 記錄安全日誌
+      securityLog('critical', 'API Key 已永久刪除', req, {
+        admin_id: req.admin.id,
+        key_id: keyId,
+        key_name: existingKey.key_name,
+        client_system: existingKey.client_system
+      });
+
+      res.json({
+        success: true,
+        message: 'API Key 已永久刪除'
+      });
+    } else {
+      // 軟刪除：設為非活動狀態 (預設行為)
+      await runSQL('UPDATE api_keys SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [keyId]);
+
+      // 記錄安全日誌
+      securityLog('warn', 'API Key 已停用', req, {
+        admin_id: req.admin.id,
+        key_id: keyId,
+        key_name: existingKey.key_name,
+        related_orders: relatedOrders.count
+      });
+
+      res.json({
+        success: true,
+        message: `API Key 已停用${relatedOrders.count > 0 ? ` (關聯 ${relatedOrders.count} 筆訂單)` : ''}`
+      });
+    }
   } catch (error) {
     console.error('刪除 API Key 失敗:', error);
     res.status(500).json({
       error: true,
-      message: '刪除失敗'
+      message: '操作失敗'
     });
   }
 });
