@@ -20,7 +20,7 @@ const adminAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'corba_3c_shop_secret_key_2024');
     
     // 查詢用戶資訊
-    const user = getAsync('SELECT * FROM users WHERE id = ? AND role = ?', [decoded.userId, 'admin']);
+    const user = await getAsync('SELECT * FROM users WHERE id = ? AND role = ?', [decoded.userId, 'admin']);
     
     if (!user) {
       return res.status(401).json({
@@ -51,7 +51,7 @@ const adminAuth = async (req, res, next) => {
  */
 router.get('/api-keys', adminAuth, async (req, res) => {
   try {
-    const apiKeys = allAsync(`
+    const apiKeys = await allAsync(`
       SELECT id, key_name, client_system, is_active, rate_limit, 
              allowed_ips, created_at, updated_at,
              SUBSTR(api_key, 1, 8) || '...' || SUBSTR(api_key, -4) as masked_key
@@ -88,7 +88,7 @@ router.post('/api-keys', adminAuth, async (req, res) => {
     }
 
     // 檢查名稱是否已存在
-    const existing = getAsync('SELECT id FROM api_keys WHERE key_name = ?', [key_name]);
+    const existing = await getAsync('SELECT id FROM api_keys WHERE key_name = ?', [key_name]);
     if (existing) {
       return res.status(409).json({
         error: true,
@@ -99,7 +99,7 @@ router.post('/api-keys', adminAuth, async (req, res) => {
     // 產生新的 API Key
     const apiKey = 'corba_' + generateSecureToken(24);
 
-    const result = runSQL(`
+    const result = await runSQL(`
       INSERT INTO api_keys (key_name, api_key, client_system, rate_limit, allowed_ips)
       VALUES (?, ?, ?, ?, ?)
     `, [key_name, apiKey, client_system, rate_limit, allowed_ips || null]);
@@ -142,7 +142,7 @@ router.put('/api-keys/:keyId', adminAuth, async (req, res) => {
     const { key_name, client_system, rate_limit, allowed_ips, is_active } = req.body;
 
     // 檢查 API Key 是否存在
-    const existingKey = getAsync('SELECT * FROM api_keys WHERE id = ?', [keyId]);
+    const existingKey = await getAsync('SELECT * FROM api_keys WHERE id = ?', [keyId]);
     if (!existingKey) {
       return res.status(404).json({
         error: true,
@@ -151,7 +151,7 @@ router.put('/api-keys/:keyId', adminAuth, async (req, res) => {
     }
 
     // 更新資料
-    runSQL(`
+    await runSQL(`
       UPDATE api_keys 
       SET key_name = ?, client_system = ?, rate_limit = ?, 
           allowed_ips = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
@@ -194,7 +194,7 @@ router.delete('/api-keys/:keyId', adminAuth, async (req, res) => {
     const { keyId } = req.params;
 
     // 檢查 API Key 是否存在
-    const existingKey = getAsync('SELECT * FROM api_keys WHERE id = ?', [keyId]);
+    const existingKey = await getAsync('SELECT * FROM api_keys WHERE id = ?', [keyId]);
     if (!existingKey) {
       return res.status(404).json({
         error: true,
@@ -203,7 +203,7 @@ router.delete('/api-keys/:keyId', adminAuth, async (req, res) => {
     }
 
     // 軟刪除：設為非活動狀態
-    runSQL('UPDATE api_keys SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [keyId]);
+    await runSQL('UPDATE api_keys SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [keyId]);
 
     // 記錄安全日誌
     securityLog('warn', 'API Key 已停用', req, {
@@ -247,7 +247,7 @@ router.get('/third-party-orders', adminAuth, async (req, res) => {
       params.push(client_system);
     }
 
-    const orders = allAsync(`
+    const orders = await allAsync(`
       SELECT 
         tpo.*, 
         et.merchant_trade_no, et.payment_date, et.payment_type,
@@ -261,7 +261,7 @@ router.get('/third-party-orders', adminAuth, async (req, res) => {
     `, [...params, parseInt(limit), parseInt(offset)]);
 
     // 取得總數
-    const totalResult = getAsync(`
+    const totalResult = await getAsync(`
       SELECT COUNT(*) as total
       FROM third_party_orders tpo
       ${whereClause}
@@ -315,7 +315,7 @@ router.get('/api-call-logs', adminAuth, async (req, res) => {
       params.push(parseInt(status));
     }
 
-    const logs = allAsync(`
+    const logs = await allAsync(`
       SELECT 
         acl.*, 
         ak.key_name,
@@ -328,7 +328,7 @@ router.get('/api-call-logs', adminAuth, async (req, res) => {
     `, [...params, parseInt(limit), parseInt(offset)]);
 
     // 取得總數
-    const totalResult = getAsync(`
+    const totalResult = await getAsync(`
       SELECT COUNT(*) as total
       FROM api_call_logs acl
       LEFT JOIN api_keys ak ON acl.api_key_id = ak.id
@@ -363,7 +363,7 @@ router.get('/api-call-logs', adminAuth, async (req, res) => {
 router.get('/statistics', adminAuth, async (req, res) => {
   try {
     // 訂單統計
-    const orderStats = getAsync(`
+    const orderStats = await getAsync(`
       SELECT 
         COUNT(*) as total_orders,
         COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid_orders,
@@ -373,7 +373,7 @@ router.get('/statistics', adminAuth, async (req, res) => {
     `);
 
     // 客戶端系統統計
-    const systemStats = allAsync(`
+    const systemStats = await allAsync(`
       SELECT 
         client_system,
         COUNT(*) as order_count,
@@ -384,7 +384,7 @@ router.get('/statistics', adminAuth, async (req, res) => {
     `);
 
     // 最近 7 天的訂單趨勢
-    const dailyStats = allAsync(`
+    const dailyStats = await allAsync(`
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as orders,
