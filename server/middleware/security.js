@@ -25,19 +25,11 @@ export const apiKeyAuth = async (req, res, next) => {
     );
 
     if (!keyInfo) {
-      console.log('❌ API Key 查詢失敗:', apiKey);
       return res.status(401).json({
         error: true,
         message: '無效的 API Key'
       });
     }
-    
-    console.log('✅ API Key 查詢成功:', {
-      id: keyInfo.id,
-      key_name: keyInfo.key_name,
-      client_system: keyInfo.client_system,
-      is_active: keyInfo.is_active
-    });
 
     // 檢查 IP 限制
     if (keyInfo.allowed_ips) {
@@ -63,8 +55,6 @@ export const apiKeyAuth = async (req, res, next) => {
       keyName: keyInfo.key_name,
       rateLimit: keyInfo.rate_limit
     };
-    
-    console.log('✅ 設置 clientInfo:', req.clientInfo);
 
     next();
   } catch (error) {
