@@ -47,7 +47,7 @@ function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-400 text-sm font-medium">總產品數</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.totalProducts}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
             </div>
             <Package className="w-8 h-8 text-green-400" />
           </div>
@@ -57,7 +57,7 @@ function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-400 text-sm font-medium">總用戶數</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.totalUsers}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
             </div>
             <Users className="w-8 h-8 text-blue-400" />
           </div>
@@ -67,7 +67,7 @@ function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-400 text-sm font-medium">總訂單數</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.totalOrders}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
             </div>
             <ShoppingCart className="w-8 h-8 text-purple-400" />
           </div>
@@ -77,7 +77,7 @@ function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-400 text-sm font-medium">總營收</p>
-              <p className="text-2xl font-bold text-gray-800">{formatPrice(stats.totalRevenue)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.totalRevenue)}</p>
             </div>
             <TrendingUp className="w-8 h-8 text-orange-400" />
           </div>
@@ -90,8 +90,8 @@ function AdminDashboard() {
           <h3 className="text-lg font-bold text-orange-400 mb-4">庫存不足警告</h3>
           <div className="space-y-2">
             {stats.lowStockProducts.map((product) => (
-              <div key={product.id} className="flex items-center justify-between py-2 px-3 bg-gray-800/50 rounded">
-                <span className="text-white">{product.name}</span>
+              <div key={product.id} className="flex items-center justify-between py-2 px-3 bg-gray-100 rounded">
+                <span className="text-gray-900">{product.name}</span>
                 <span className="text-orange-400 font-bold">剩餘 {product.stock} 件</span>
               </div>
             ))}
@@ -107,9 +107,9 @@ function AdminDashboard() {
         ) : (
           <div className="space-y-2">
             {stats.recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between py-3 px-4 bg-gray-800/30 rounded">
+              <div key={order.id} className="flex items-center justify-between py-3 px-4 bg-gray-100 rounded">
                 <div>
-                  <p className="text-white font-medium">訂單 #{order.id}</p>
+                  <p className="text-gray-900 font-medium">訂單 #{order.id}</p>
                   <p className="text-gray-400 text-sm">{new Date(order.createdAt).toLocaleString('zh-TW')}</p>
                 </div>
                 <div className="text-right">
@@ -193,25 +193,25 @@ function AdminUsers() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300">用戶資訊</th>
-                <th className="text-left py-3 px-4 text-gray-300">角色</th>
-                <th className="text-left py-3 px-4 text-gray-300">訂單數量</th>
-                <th className="text-left py-3 px-4 text-gray-300">註冊時間</th>
-                <th className="text-left py-3 px-4 text-gray-300">最後登入</th>
-                <th className="text-left py-3 px-4 text-gray-300">操作</th>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-gray-700">用戶資訊</th>
+                <th className="text-left py-3 px-4 text-gray-700">角色</th>
+                <th className="text-left py-3 px-4 text-gray-700">訂單數量</th>
+                <th className="text-left py-3 px-4 text-gray-700">註冊時間</th>
+                <th className="text-left py-3 px-4 text-gray-700">最後登入</th>
+                <th className="text-left py-3 px-4 text-gray-700">操作</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
+                        <User className="w-5 h-5 text-gray-900" />
                       </div>
                       <div>
-                        <p className="text-white font-medium">{user.name}</p>
+                        <p className="text-gray-900 font-medium">{user.name}</p>
                         <p className="text-gray-400 text-sm">{user.email}</p>
                       </div>
                     </div>
@@ -226,7 +226,7 @@ function AdminUsers() {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-white font-medium">
+                    <span className="text-gray-900 font-medium">
                       {getUserOrderCount(user.id)} 筆
                     </span>
                   </td>
@@ -277,7 +277,7 @@ function AdminUsers() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-400 text-sm font-medium">管理員</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {users.filter(u => u.role === 'admin').length}
               </p>
             </div>
@@ -289,7 +289,7 @@ function AdminUsers() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-400 text-sm font-medium">一般用戶</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {users.filter(u => u.role === 'user').length}
               </p>
             </div>
@@ -301,7 +301,7 @@ function AdminUsers() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-400 text-sm font-medium">活躍用戶</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {users.filter(u => u.lastLoginAt).length}
               </p>
             </div>
@@ -392,20 +392,20 @@ function AdminProducts() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300">產品</th>
-                <th className="text-left py-3 px-4 text-gray-300">分類</th>
-                <th className="text-left py-3 px-4 text-gray-300">價格</th>
-                <th className="text-left py-3 px-4 text-gray-300">折扣</th>
-                <th className="text-left py-3 px-4 text-gray-300">庫存</th>
-                <th className="text-left py-3 px-4 text-gray-300">狀態</th>
-                <th className="text-left py-3 px-4 text-gray-300">更新時間</th>
-                <th className="text-left py-3 px-4 text-gray-300">操作</th>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-gray-700">產品</th>
+                <th className="text-left py-3 px-4 text-gray-700">分類</th>
+                <th className="text-left py-3 px-4 text-gray-700">價格</th>
+                <th className="text-left py-3 px-4 text-gray-700">折扣</th>
+                <th className="text-left py-3 px-4 text-gray-700">庫存</th>
+                <th className="text-left py-3 px-4 text-gray-700">狀態</th>
+                <th className="text-left py-3 px-4 text-gray-700">更新時間</th>
+                <th className="text-left py-3 px-4 text-gray-700">操作</th>
               </tr>
             </thead>
             <tbody>
               {products.map((product) => (
-                <tr key={product.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                <tr key={product.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-3">
                       <img
@@ -418,7 +418,7 @@ function AdminProducts() {
                         }}
                       />
                       <div>
-                        <p className="text-white font-medium">{product.name}</p>
+                        <p className="text-gray-900 font-medium">{product.name}</p>
                         <p className="text-gray-400 text-sm">{product.description.slice(0, 40)}...</p>
                         {product.notes && (
                           <p className="text-blue-400 text-xs">備註: {product.notes.slice(0, 30)}...</p>
@@ -426,7 +426,7 @@ function AdminProducts() {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-300">{getCategoryName(product.category)}</td>
+                  <td className="py-3 px-4 text-gray-700">{getCategoryName(product.category)}</td>
                   <td className="py-3 px-4">
                     <div className="space-y-1">
                       <p className="text-green-400 font-bold">{formatPrice(product.price)}</p>
@@ -445,7 +445,7 @@ function AdminProducts() {
                   <td className="py-3 px-4">
                     <span className={`font-bold ${
                       product.stock < 10 ? 'text-orange-400' : 
-                      product.stock === 0 ? 'text-red-400' : 'text-white'
+                      product.stock === 0 ? 'text-red-400' : 'text-gray-900'
                     }`}>
                       {product.stock}
                     </span>
@@ -667,7 +667,7 @@ function AdminApiKeys() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-400 text-sm font-medium">總 API Keys</p>
-              <p className="text-2xl font-bold text-gray-800">{apiKeys.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{apiKeys.length}</p>
             </div>
             <Key className="w-8 h-8 text-green-400" />
           </div>
@@ -677,7 +677,7 @@ function AdminApiKeys() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-400 text-sm font-medium">活躍 Keys</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {apiKeys.filter(key => key.is_active).length}
               </p>
             </div>
@@ -689,7 +689,7 @@ function AdminApiKeys() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-400 text-sm font-medium">停用 Keys</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {apiKeys.filter(key => !key.is_active).length}
               </p>
             </div>
@@ -703,42 +703,42 @@ function AdminApiKeys() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300">Key 名稱</th>
-                <th className="text-left py-3 px-4 text-gray-300">客戶端系統</th>
-                <th className="text-left py-3 px-4 text-gray-300">API Key</th>
-                <th className="text-left py-3 px-4 text-gray-300">速率限制</th>
-                <th className="text-left py-3 px-4 text-gray-300">允許 IP</th>
-                <th className="text-left py-3 px-4 text-gray-300">狀態</th>
-                <th className="text-left py-3 px-4 text-gray-300">建立時間</th>
-                <th className="text-left py-3 px-4 text-gray-300">操作</th>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-gray-700">Key 名稱</th>
+                <th className="text-left py-3 px-4 text-gray-700">客戶端系統</th>
+                <th className="text-left py-3 px-4 text-gray-700">API Key</th>
+                <th className="text-left py-3 px-4 text-gray-700">速率限制</th>
+                <th className="text-left py-3 px-4 text-gray-700">允許 IP</th>
+                <th className="text-left py-3 px-4 text-gray-700">狀態</th>
+                <th className="text-left py-3 px-4 text-gray-700">建立時間</th>
+                <th className="text-left py-3 px-4 text-gray-700">操作</th>
               </tr>
             </thead>
             <tbody>
               {apiKeys.map((apiKey) => (
-                <tr key={apiKey.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                <tr key={apiKey.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
                       <Key className="w-4 h-4 text-green-400" />
-                      <span className="text-white font-medium">{apiKey.key_name}</span>
+                      <span className="text-gray-900 font-medium">{apiKey.key_name}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-300">{apiKey.client_system}</td>
+                  <td className="py-3 px-4 text-gray-700">{apiKey.client_system}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
-                      <code className="bg-gray-800 px-2 py-1 rounded text-sm text-gray-300">
+                      <code className="bg-gray-200 px-2 py-1 rounded text-sm text-gray-700">
                         {apiKey.masked_key}
                       </code>
                       <button
                         onClick={() => copyToClipboard(apiKey.masked_key)}
-                        className="p-1 text-gray-400 hover:text-white transition-colors"
+                        className="p-1 text-gray-400 hover:text-gray-900 transition-colors"
                         title="複製"
                       >
                         <Copy className="w-3 h-3" />
                       </button>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-300">{apiKey.rate_limit}/hr</td>
+                  <td className="py-3 px-4 text-gray-700">{apiKey.rate_limit}/hr</td>
                   <td className="py-3 px-4">
                     {apiKey.allowed_ips ? (
                       <span className="text-blue-400 text-sm">{apiKey.allowed_ips}</span>
@@ -796,12 +796,12 @@ function AdminApiKeys() {
       {/* Create API Key Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-bold text-green-400 mb-4">新增 API Key</h3>
             
             <form onSubmit={handleCreateApiKey} className="space-y-4">
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-800 text-sm font-medium mb-2">
                   Key 名稱 *
                 </label>
                 <input
@@ -815,7 +815,7 @@ function AdminApiKeys() {
               </div>
 
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-800 text-sm font-medium mb-2">
                   客戶端系統 *
                 </label>
                 <input
@@ -829,7 +829,7 @@ function AdminApiKeys() {
               </div>
 
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-800 text-sm font-medium mb-2">
                   速率限制 (每小時)
                 </label>
                 <input
@@ -843,7 +843,7 @@ function AdminApiKeys() {
               </div>
 
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-800 text-sm font-medium mb-2">
                   允許的 IP 位址
                 </label>
                 <input
@@ -853,7 +853,7 @@ function AdminApiKeys() {
                   className="rm-input w-full"
                   placeholder="例如：192.168.1.100,203.0.113.0/24 (留空表示不限制)"
                 />
-                <p className="text-gray-500 text-xs mt-1">
+                <p className="text-gray-600 text-xs mt-1">
                   支援單一 IP 或 CIDR 格式，多個 IP 用逗號分隔
                 </p>
               </div>
@@ -868,7 +868,7 @@ function AdminApiKeys() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-gray-600 text-gray-300 rounded hover:bg-gray-800 transition-colors"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 transition-colors"
                 >
                   取消
                 </button>
@@ -1076,35 +1076,35 @@ function AdminThirdPartyOrders() {
         <div className="rm-card bg-gradient-to-r from-blue-400/10 to-blue-600/10 border border-blue-400/30">
           <div className="text-center">
             <p className="text-blue-400 text-sm font-medium">總訂單數</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
           </div>
         </div>
         
         <div className="rm-card bg-gradient-to-r from-yellow-400/10 to-yellow-600/10 border border-yellow-400/30">
           <div className="text-center">
             <p className="text-yellow-400 text-sm font-medium">待付款</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.pending}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
           </div>
         </div>
 
         <div className="rm-card bg-gradient-to-r from-green-400/10 to-green-600/10 border border-green-400/30">
           <div className="text-center">
             <p className="text-green-400 text-sm font-medium">已付款</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.paid}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.paid}</p>
           </div>
         </div>
 
         <div className="rm-card bg-gradient-to-r from-purple-400/10 to-purple-600/10 border border-purple-400/30">
           <div className="text-center">
             <p className="text-purple-400 text-sm font-medium">成功率</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.successRate}%</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.successRate}%</p>
           </div>
         </div>
 
         <div className="rm-card bg-gradient-to-r from-orange-400/10 to-red-500/10 border border-orange-400/30 md:col-span-2">
           <div className="text-center">
             <p className="text-orange-400 text-sm font-medium">總營收</p>
-            <p className="text-2xl font-bold text-gray-800">{formatPrice(stats.totalRevenue)}</p>
+            <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.totalRevenue)}</p>
           </div>
         </div>
       </div>
@@ -1113,7 +1113,7 @@ function AdminThirdPartyOrders() {
       <div className="rm-card">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">搜尋</label>
+            <label className="block text-gray-700 text-sm font-medium mb-2">搜尋</label>
             <input
               type="text"
               value={filters.search}
@@ -1124,7 +1124,7 @@ function AdminThirdPartyOrders() {
           </div>
 
           <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">狀態</label>
+            <label className="block text-gray-700 text-sm font-medium mb-2">狀態</label>
             <select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -1139,7 +1139,7 @@ function AdminThirdPartyOrders() {
           </div>
 
           <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">客戶端系統</label>
+            <label className="block text-gray-700 text-sm font-medium mb-2">客戶端系統</label>
             <select
               value={filters.client_system}
               onChange={(e) => handleFilterChange('client_system', e.target.value)}
@@ -1153,7 +1153,7 @@ function AdminThirdPartyOrders() {
           </div>
 
           <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">日期範圍</label>
+            <label className="block text-gray-700 text-sm font-medium mb-2">日期範圍</label>
             <div className="flex space-x-2">
               <input
                 type="date"
@@ -1178,22 +1178,22 @@ function AdminThirdPartyOrders() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300">訂單資訊</th>
-                <th className="text-left py-3 px-4 text-gray-300">客戶端</th>
-                <th className="text-left py-3 px-4 text-gray-300">金額</th>
-                <th className="text-left py-3 px-4 text-gray-300">狀態</th>
-                <th className="text-left py-3 px-4 text-gray-300">付款資訊</th>
-                <th className="text-left py-3 px-4 text-gray-300">建立時間</th>
-                <th className="text-left py-3 px-4 text-gray-300">操作</th>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-gray-700">訂單資訊</th>
+                <th className="text-left py-3 px-4 text-gray-700">客戶端</th>
+                <th className="text-left py-3 px-4 text-gray-700">金額</th>
+                <th className="text-left py-3 px-4 text-gray-700">狀態</th>
+                <th className="text-left py-3 px-4 text-gray-700">付款資訊</th>
+                <th className="text-left py-3 px-4 text-gray-700">建立時間</th>
+                <th className="text-left py-3 px-4 text-gray-700">操作</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.map((order) => (
-                <tr key={order.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                <tr key={order.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div>
-                      <p className="text-white font-medium">{order.external_order_id}</p>
+                      <p className="text-gray-900 font-medium">{order.external_order_id}</p>
                       <p className="text-gray-400 text-sm">商戶號: {order.merchant_trade_no}</p>
                       {order.customer_name && (
                         <p className="text-blue-400 text-sm">客戶: {order.customer_name}</p>
@@ -1218,7 +1218,7 @@ function AdminThirdPartyOrders() {
                   <td className="py-3 px-4">
                     <div className="text-sm">
                       {order.payment_type && (
-                        <p className="text-gray-300">方式: {order.payment_type}</p>
+                        <p className="text-gray-700">方式: {order.payment_type}</p>
                       )}
                       {order.payment_date && (
                         <p className="text-gray-400">時間: {formatDate(order.payment_date)}</p>
@@ -1350,7 +1350,7 @@ function AdminApiLogs() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-400 text-sm font-medium">總調用次數</p>
-              <p className="text-2xl font-bold text-gray-800">{apiLogs.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{apiLogs.length}</p>
             </div>
             <Activity className="w-8 h-8 text-blue-400" />
           </div>
@@ -1360,7 +1360,7 @@ function AdminApiLogs() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-400 text-sm font-medium">成功請求</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {apiLogs.filter(log => log.response_status >= 200 && log.response_status < 300).length}
               </p>
             </div>
@@ -1372,7 +1372,7 @@ function AdminApiLogs() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-400 text-sm font-medium">客戶端錯誤</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {apiLogs.filter(log => log.response_status >= 400 && log.response_status < 500).length}
               </p>
             </div>
@@ -1384,7 +1384,7 @@ function AdminApiLogs() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-red-400 text-sm font-medium">服務端錯誤</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {apiLogs.filter(log => log.response_status >= 500).length}
               </p>
             </div>
@@ -1398,19 +1398,19 @@ function AdminApiLogs() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300">時間</th>
-                <th className="text-left py-3 px-4 text-gray-300">客戶端</th>
-                <th className="text-left py-3 px-4 text-gray-300">API Key</th>
-                <th className="text-left py-3 px-4 text-gray-300">請求</th>
-                <th className="text-left py-3 px-4 text-gray-300">狀態</th>
-                <th className="text-left py-3 px-4 text-gray-300">耗時</th>
-                <th className="text-left py-3 px-4 text-gray-300">客戶端IP</th>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-gray-700">時間</th>
+                <th className="text-left py-3 px-4 text-gray-700">客戶端</th>
+                <th className="text-left py-3 px-4 text-gray-700">API Key</th>
+                <th className="text-left py-3 px-4 text-gray-700">請求</th>
+                <th className="text-left py-3 px-4 text-gray-700">狀態</th>
+                <th className="text-left py-3 px-4 text-gray-700">耗時</th>
+                <th className="text-left py-3 px-4 text-gray-700">客戶端IP</th>
               </tr>
             </thead>
             <tbody>
               {apiLogs.map((log) => (
-                <tr key={log.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                <tr key={log.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4 text-gray-400 text-sm">
                     {new Date(log.created_at).toLocaleString('zh-TW', {
                       month: '2-digit',
@@ -1426,7 +1426,7 @@ function AdminApiLogs() {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-gray-300 text-sm">
+                    <span className="text-gray-700 text-sm">
                       {log.key_name || 'N/A'}
                     </span>
                   </td>
@@ -1440,7 +1440,7 @@ function AdminApiLogs() {
                       }`}>
                         {log.method}
                       </span>
-                      <span className="text-gray-300 text-sm font-mono">
+                      <span className="text-gray-700 text-sm font-mono">
                         {log.endpoint}
                       </span>
                     </div>
@@ -1453,7 +1453,7 @@ function AdminApiLogs() {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-300 text-sm">
+                  <td className="py-3 px-4 text-gray-700 text-sm">
                     {log.processing_time ? formatDuration(log.processing_time) : '-'}
                   </td>
                   <td className="py-3 px-4 text-gray-400 text-sm font-mono">
@@ -1604,7 +1604,7 @@ function AdminMonitoring() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-400 text-sm font-medium">平均回應時間</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {stats.performance.avgResponseTime.toFixed(0)}ms
               </p>
               <p className="text-gray-500 text-xs">較昨日 -12%</p>
@@ -1617,7 +1617,7 @@ function AdminMonitoring() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-400 text-sm font-medium">成功率</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {stats.performance.successRate.toFixed(1)}%
               </p>
               <p className="text-gray-500 text-xs">穩定運行中</p>
@@ -1630,7 +1630,7 @@ function AdminMonitoring() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-400 text-sm font-medium">總請求數</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {stats.performance.totalRequests.toLocaleString()}
               </p>
               <p className="text-gray-500 text-xs">較昨日 +23%</p>
@@ -1643,7 +1643,7 @@ function AdminMonitoring() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-400 text-sm font-medium">活躍API Keys</p>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-gray-900">
                 {stats.performance.activeApiKeys}
               </p>
               <p className="text-gray-500 text-xs">持續監控中</p>
@@ -1700,7 +1700,7 @@ function AdminMonitoring() {
                 return (
                   <div key={index} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300 font-medium">{system.client_system}</span>
+                      <span className="text-gray-700 font-medium">{system.client_system}</span>
                       <span className="text-green-400 font-bold">{formatPrice(system.revenue || 0)}</span>
                     </div>
                     <div className="w-full bg-gray-700 rounded-full h-2">
@@ -1740,7 +1740,7 @@ function AdminMonitoring() {
                       style={{ height: `${height * 1.5}px`, minHeight: '2px' }}
                     >
                       <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-xs text-white bg-gray-800 px-1 rounded">
+                        <span className="text-xs text-gray-900 bg-gray-200 px-1 rounded">
                           {hour.requests}
                         </span>
                       </div>
@@ -1764,7 +1764,7 @@ function AdminMonitoring() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 bg-gray-800 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-300">API 服務</span>
+              <span className="text-gray-700">API 服務</span>
               <span className="flex items-center text-green-400">
                 <CheckCircle className="w-4 h-4 mr-1" />
                 正常
@@ -1775,7 +1775,7 @@ function AdminMonitoring() {
 
           <div className="p-4 bg-gray-800 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-300">資料庫</span>
+              <span className="text-gray-700">資料庫</span>
               <span className="flex items-center text-green-400">
                 <CheckCircle className="w-4 h-4 mr-1" />
                 正常
@@ -1786,7 +1786,7 @@ function AdminMonitoring() {
 
           <div className="p-4 bg-gray-800 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-300">綠界連線</span>
+              <span className="text-gray-700">綠界連線</span>
               <span className="flex items-center text-green-400">
                 <CheckCircle className="w-4 h-4 mr-1" />
                 正常
@@ -1828,7 +1828,7 @@ export function Admin() {
         <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-gray-800 mb-2">
           Corba 3C Shop 管理後台
         </h1>
-        <p className="text-gray-600">歡迎，{user.name}！管理您的次元電商帝國。</p>
+        <p className="text-gray-700">歡迎，{user.name}！管理您的次元電商帝國。</p>
       </div>
 
       <div className="grid lg:grid-cols-5 gap-8">
