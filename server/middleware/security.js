@@ -7,7 +7,7 @@ const rateLimitCache = new Map();
 /**
  * API Key 驗證中間件
  */
-export const apiKeyAuth = (req, res, next) => {
+export const apiKeyAuth = async (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
   
   if (!apiKey) {
@@ -19,7 +19,7 @@ export const apiKeyAuth = (req, res, next) => {
 
   try {
     // 查詢 API Key
-    const keyInfo = getAsync(
+    const keyInfo = await getAsync(
       'SELECT * FROM api_keys WHERE api_key = ? AND is_active = 1',
       [apiKey]
     );
