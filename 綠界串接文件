@@ -1,0 +1,196 @@
+付款方式 / BARCODE
+應用場景
+當特店提供消費者在綠界付款頁面使用超商條碼交易時。
+
+Step 1. 特店：將ChoosePayment 選擇預設付款方式設定為BARCODE。
+Step 2. 綠界：接受特店訂單並檢核資料。
+API介接網址
+測試環境：https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5
+正式環境：https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5
+❗ 注意事項：需透過前端網頁導轉(Submit)到綠界付款API網址。
+
+HTTPS 傳輸協定
+Content Type ：application/x-www-form-urlencoded
+HTTP Method ：POST
+特店傳入參數說明(共同參數)
+MerchantID String(10)
+特店編號 必填
+
+特店編號
+測試環境特店編號
+正式環境金鑰取得
+MerchantTradeNo String(20)
+特店訂單編號 必填
+
+特店訂單編號均為唯一值，不可重複使用。
+英數字大小寫混合
+❗ 注意事項：如何避免訂單編號重複請參考FAQ
+MerchantTradeDate String(20)
+特店交易時間 必填
+
+格式為：yyyy/MM/dd HH:mm:ss
+
+PaymentType String(20)
+交易類型 必填
+
+請固定填入 aio
+
+TotalAmount Int
+交易金額 必填
+
+請帶整數，不可有小數點。
+僅限新台幣
+TradeDesc String(200)
+交易描述 必填
+
+請勿帶入特殊字元。
+
+ItemName String(400)
+商品名稱 必填
+
+商品名稱
+如果商品名稱有多筆，需在金流選擇頁一行一行顯示商品名稱的話，商品名稱請以符號#分隔。
+商品名稱字數限制為中英數400字內，超過此限制系統將自動截斷。 詳細的使用注意事項請參考FAQ。
+ReturnURL String(200)
+付款完成通知回傳網址 必填
+
+ReturnURL為付款結果通知回傳網址，為特店server或主機的URL，用來接收綠界後端回傳的付款結果通知。
+當消費者付款完成後，綠界會將付款結果參數以幕後回傳到該網址。詳細說明請參考付款結果通知
+❗ 注意事項：
+
+請勿設定與Client端接收付款結果網址OrderResultURL相同位置，避免程式判斷錯誤。
+ReturnURL收到綠界後端回傳的付款結果通知後，請回應字串1|OK給綠界。
+1|OK僅是廠商回應綠界是否收到通知，並不會改變付款狀態。
+參數內容若有包含%26(&)及%3C(<) 這二個值時，請先進行urldecode() 避免呼叫API失敗。
+ChoosePayment String(20)
+選擇預設付款方式 必填
+
+綠界提供下列付款方式：
+
+BARCODE：超商條碼
+❗ 注意事項：
+若為手機版時不支援下列付款方式：WebATM
+如需要不透過綠界畫面取得ATM、CVS、BARCODE的繳費代碼，請參考如何不經過綠界畫面取得ATM、CVS、BARCODE的繳費代碼。
+當瀏覽器不為Safari時，不會顯示Apple Pay付款功能。
+CheckMacValue String
+檢查碼 必填
+
+請參考檢查碼機制
+
+EncryptType Int
+CheckMacValue加密類型 必填
+
+請固定填入1，使用SHA256加密。
+
+StoreID String(10)
+特店旗下店舖代號
+
+提供特店填入分店代號使用，僅可用英數字大小寫混合。
+
+ClientBackURL String(200)
+Client端返回特店的按鈕連結
+
+消費者點選此按鈕後，會將頁面導回到此設定的網址
+
+❗ 注意事項：
+
+導回時不會帶付款結果到此網址，只是將頁面導回而已。
+設定此參數，綠界會在付款完成或取號完成頁面上顯示[返回商店]的按鈕。
+設定此參數，發生簡訊OTP驗證失敗時，頁面上會顯示[返回商店]的按鈕。
+若未設定此參數，則綠界付款完成頁或取號完成頁面，不會顯示[返回商店]的按鈕。
+若導回網址未使用https時，部份瀏覽器可能會出現警告訊息。
+參數內容若有包含%26(&)及%3C(<) 這二個值時，請先進行urldecode() 避免呼叫API失敗。
+ItemURLString(200)
+商品銷售網址
+
+Remark String(100)
+備註欄位
+
+ChooseSubPayment String(20)
+付款子項目
+
+若設定此參數，建立訂單將轉導至綠界訂單成立頁，依設定的付款方式及付款子項目帶入訂單，無法選擇其他付款子項目。請參考付款方式一覽表
+
+❗ 注意事項：因板信銀行會於每月進行例行維護，當遇銀行維護時，將會建立訂單失敗。
+
+OrderResultURL String(200)
+Client端回傳付款結果網址
+
+有別於ReturnURL (server端的網址)，OrderResultURL為特店的client端(前端)網址。消費者付款完成後，綠界會將付款結果參數以POST方式回傳到到該網址。詳細說明請參考付款結果通知。
+
+❗ 注意事項：
+
+若與[ClientBackURL]同時設定，將會以此參數為主。
+銀聯卡及非即時交易( ATM、CVS、BARCODE )不支援此參數。
+付款結果通知請依ReturnURL (server端的網址)為主,避免因前端操作或網路問題未收到OrderResultURL 特店的client端(前端)的通知。
+參數內容若有包含%26(&)及%3C(<) 這二個值時，請先進行urldecode() 避免呼叫API失敗。
+NeedExtraPaidInfo String(1)
+是否需要額外的付款資訊
+
+額外的付款資訊
+
+若不回傳額外的付款資訊時，參數值請傳：Ｎ；
+若要回傳額外的付款資訊時，參數值請傳：Ｙ，付款完成後綠界後端會以POST方式回傳額外付款資訊到特店的ReturnURL 與OrderResultURL。
+❗ 注意事項：回傳額外付款資訊參數請參考-額外回傳的參數
+
+PlatformID String(10)
+特約合作平台商代號
+
+為專案合作的平台商使用。
+
+CustomField1 String(50)
+自訂名稱欄位1
+
+提供廠商使用記錄客製化欄位。
+
+CustomField2 String(50)
+自訂名稱欄位2
+
+提供廠商使用記錄客製化欄位。
+
+CustomField3 String(50)
+自訂名稱欄位3
+
+提供廠商使用記錄客製化欄位。
+
+CustomField4 String(50)
+自訂名稱欄位4
+
+提供廠商使用記錄客製化欄位。
+
+Language String(3)
+語系設定
+
+預設語系為中文，若要變更語系參數值請帶：
+
+ENG：英語
+KOR：韓語
+JPN：日語
+CHI：簡體中文
+BARCODE付款參數
+StoreExpireDate Int
+超商繳費截止時間
+
+若未設定此參數，預設為7天
+若需設定最長 30 天，最短1天。
+❗ 注意事項：以天為單位，例如7/1號訂單成立，有效天數設為3天，則到期日為7/4 23:59截止。若要設定超過30天時，限特約賣家跟業務提出申請。
+
+PaymentInfoURL String(200)
+Server端回傳付款相關資訊
+
+若有設定此參數，訂單建立完成後(非付款完成)，綠界會Server端背景回傳消費者付款方式相關資訊(例：銀行代碼、繳費虛擬帳號繳費期限…等)。請參考ATM、CVS或BARCODE的取號結果通知
+❗ 注意事項：
+
+頁面將會停留在綠界，顯示繳費的相關資訊。
+回傳只有三段號碼，並不會回傳條碼圖，需自行轉換成code39的三段條碼。
+參數內容若有包含%26(&)及%3C(<) 這二個值時，請先進行urldecode() 避免呼叫API失敗。
+ClientRedirectURL String(200)
+Client端回傳付款相關資訊
+
+若有設定此參數，訂單建立完成後(非付款完成)，綠界會Client端回傳消費者付款方式相關資訊(例：銀行代碼、繳費虛擬帳號繳費期限…等)且將頁面轉到特店指定的頁面。請參考ATM、CVS或BARCODE的取號結果通知
+❗ 注意事項：
+
+若設定此參數，將會使設定的返回特店的按鈕連結[ClientBackURL]失效。
+若導回網址未使用https時，部份瀏覽器可能會出現警告訊息。
+回傳只有三段號碼，並不會回傳條碼圖，需自行轉換成code39的三段條碼。
+參數內容若有包含%26(&)及%3C(<) 這二個值時，請先進行urldecode() 避免呼叫API失敗。

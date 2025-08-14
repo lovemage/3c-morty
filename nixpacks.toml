@@ -1,0 +1,36 @@
+[phases.setup]
+nixPkgs = ['nodejs_20', 'python3']
+
+[providers]
+node = "nodejs_20"
+
+[phases.install]
+dependsOn = ['setup']
+cmds = [
+  'echo "📦 安裝依賴："',
+  'npm ci'
+]
+
+[phases.build]
+dependsOn = ['install']
+cmds = [
+  'echo "🔨 構建前端："',
+  'npm run build',
+  'echo "✅ 構建完成"'
+]
+
+[start]
+cmd = 'npm start'
+
+[deploy]
+type = "node"
+
+[variables]
+NODE_ENV = 'production'
+
+# Railway 標準部署配置 - 無持久化卷
+# 項目根目錄: 工作目錄
+# 數據庫路徑: server/database/database.db (相對路徑)
+# 靜態文件: public/images/ (相對路徑)
+# 構建輸出: dist/ (相對路徑)
+# 啟動文件: server/index.js (相對路徑) 

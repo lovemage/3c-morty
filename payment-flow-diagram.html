@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四方金流代收流程圖</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .description {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .description h2 {
+            color: #555;
+            font-size: 18px;
+        }
+        .description ol {
+            line-height: 1.8;
+        }
+        .export-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>四方金流代收 BARCODE 流程圖</h1>
+        
+        <div class="mermaid">
+sequenceDiagram
+    participant T as 第三方網站
+    participant A as 此站API
+    participant E as 綠界ECPay
+    participant C as 客戶
+    participant D as Admin後台
+
+    T->>A: 1. POST /api/third-party/barcode/create<br/>(金額, 訂單號)
+    A->>A: 2. 驗證API Key
+    A->>E: 3. 建立BARCODE訂單
+    E-->>A: 4. 回傳barcode資料
+    A-->>T: 5. 回傳barcode + QR Code URL
+    
+    C->>E: 6. 到便利店掃碼付款
+    E->>A: 7. POST /api/third-party/ecpay/callback<br/>(付款成功通知)
+    A->>A: 8. 驗證CheckMacValue
+    A->>A: 9. 更新訂單狀態為paid
+    A->>T: 10. 通知第三方網站<br/>(如有callback_url)
+    A->>D: 11. 訂單記錄在Admin後台
+        </div>
+
+        <div class="description">
+            <h2>流程說明：</h2>
+            <ol>
+                <li><strong>第三方網站發起請求</strong>：透過 API 傳送金額和訂單號</li>
+                <li><strong>API Key 驗證</strong>：系統驗證請求的合法性</li>
+                <li><strong>建立 BARCODE 訂單</strong>：向綠界 ECPay 發送建立條碼請求</li>
+                <li><strong>取得條碼資料</strong>：綠界回傳條碼和相關資訊</li>
+                <li><strong>回傳給第三方</strong>：將條碼資料和 QR Code URL 回傳</li>
+                <li><strong>客戶付款</strong>：客戶至便利商店掃描條碼完成付款</li>
+                <li><strong>付款通知</strong>：綠界通知系統付款已完成</li>
+                <li><strong>驗證簽章</strong>：確認回調的真實性</li>
+                <li><strong>更新狀態</strong>：將訂單狀態更新為已付款</li>
+                <li><strong>通知第三方</strong>：若有設定 callback_url，通知第三方網站</li>
+                <li><strong>後台記錄</strong>：所有訂單資料都會記錄在 Admin 管理後台</li>
+            </ol>
+        </div>
+
+        <div class="export-info">
+            <strong>轉換為 PDF 或 PNG 的方法：</strong>
+            <ul>
+                <li><strong>轉 PDF</strong>：在瀏覽器中按 Ctrl+P (Windows) 或 Cmd+P (Mac)，選擇「儲存為 PDF」</li>
+                <li><strong>轉 PNG</strong>：使用瀏覽器的截圖功能，或使用截圖工具擷取頁面內容</li>
+                <li><strong>線上工具</strong>：訪問 <a href="https://mermaid.live" target="_blank">mermaid.live</a>，貼上 Mermaid 程式碼，可直接匯出 SVG/PNG</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#4CAF50',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#2E7D32',
+                lineColor: '#5470c6',
+                secondaryColor: '#2196F3',
+                tertiaryColor: '#FFC107'
+            }
+        });
+    </script>
+</body>
+</html>
