@@ -20,7 +20,7 @@ export const apiKeyAuth = async (req, res, next) => {
   try {
     // 查詢 API Key
     const keyInfo = await getAsync(
-      'SELECT * FROM api_keys WHERE api_key = ? AND is_active = true',
+      'SELECT * FROM api_keys WHERE api_key = ? AND is_active = 1',
       [apiKey]
     );
 
