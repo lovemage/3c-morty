@@ -176,8 +176,10 @@ app.get('/generate-ecpay-form', async (req, res) => {
     const uniqueRandom = Math.random().toString(36).substring(2, 8).toUpperCase();
     const merchantTradeNo = `TEST${uniqueTimestamp.slice(-10)}${uniqueRandom}`;
     
-    // 建立訂單 (直接呼叫API)
-    const response = await fetch(`${req.protocol}://${req.get('host')}/api/third-party/barcode/create`, {
+    // 建立訂單 (直接呼叫API) - 使用絕對URL確保正確
+    const apiUrl = 'https://corba3c-production.up.railway.app/api/third-party/barcode/create';
+    console.log('呼叫API:', apiUrl);
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -186,14 +188,18 @@ app.get('/generate-ecpay-form', async (req, res) => {
       body: JSON.stringify({
         amount: amount,
         client_order_id: clientOrderId,
-        callback_url: `${req.protocol}://${req.get('host')}/webhook-test`
+        callback_url: 'https://webhook.site/test'
       })
     });
     
+    console.log('API回應狀態:', response.status);
     const orderResult = await response.json();
+    console.log('API回應內容:', JSON.stringify(orderResult, null, 2));
     
     if (!response.ok || !orderResult.success) {
-      throw new Error(orderResult.message || `API呼叫失敗: ${response.status}`);
+      const errorMsg = orderResult.message || `API呼叫失敗: ${response.status}`;
+      console.error('API錯誤:', errorMsg);
+      throw new Error(errorMsg);
     }
     
     // 生成純HTML表單頁面 (無JavaScript)
