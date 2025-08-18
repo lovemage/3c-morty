@@ -76,7 +76,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ECPay 測試頁面端點
+// ECPay 測試表單選擇頁面
 app.get('/test-ecpay', (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -84,95 +84,215 @@ app.get('/test-ecpay', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ECPay 生產環境測試</title>
+    <title>ECPay 測試 - 選擇金額</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-        .btn { background: #4CAF50; color: white; padding: 15px 25px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 0; }
-        .btn:hover { background: #45a049; }
-        .form-group { margin: 15px 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        #result { background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0; white-space: pre-wrap; }
-        #checkoutForm { display: none; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .amount-btn { 
+            display: inline-block; 
+            background: #4CAF50; 
+            color: white; 
+            padding: 15px 25px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 10px; 
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+        .amount-btn:hover { background: #45a049; }
+        h1 { text-align: center; color: #333; }
+        p { text-align: center; color: #666; margin: 20px 0; }
+        .custom-form { 
+            border: 2px dashed #ddd; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-top: 30px;
+            text-align: center;
+        }
+        input[type="number"] { 
+            width: 200px; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            margin: 0 10px;
+            font-size: 16px;
+        }
+        .custom-btn {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .custom-btn:hover { background: #1976D2; }
     </style>
 </head>
 <body>
-    <h1>🏪 ECPay 生產環境測試</h1>
-    
-    <div class="form-group">
-        <label for="amount">金額 (NT$)</label>
-        <input type="number" id="amount" value="299" min="1" max="6000">
-    </div>
-    
-    <button class="btn" onclick="createOrder()">建立訂單並測試ECPay跳轉</button>
-    
-    <div id="result"></div>
-    
-    <form id="checkoutForm" method="POST" target="_blank">
-        <button type="submit" class="btn" style="background: #FF5722;">🚀 跳轉到 ECPay 收銀台</button>
-    </form>
-
-    <script>
-        async function createOrder() {
-            const amount = document.getElementById('amount').value;
-            const timestamp = Date.now();
-            const randomId = Math.random().toString(36).substring(2, 10);
-            const clientOrderId = \`prod_test_\${timestamp}_\${randomId}\`;
-            
-            try {
-                const response = await fetch('/api/third-party/barcode/create', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
-                    },
-                    body: JSON.stringify({
-                        amount: parseInt(amount),
-                        client_order_id: clientOrderId,
-                        callback_url: window.location.origin + '/webhook-test'
-                    })
-                });
-                
-                const data = await response.json();
-                const result = document.getElementById('result');
-                
-                if (response.ok && data.success) {
-                    result.textContent = '✅ 訂單建立成功！\\n\\n訂單ID: ' + data.data.order_id + '\\n商家交易號: ' + data.data.merchant_trade_no;
-                    setupECPayForm(data.data.ecpay_form);
-                } else {
-                    result.textContent = '❌ 建立失敗:\\n' + JSON.stringify(data, null, 2);
-                }
-            } catch (error) {
-                document.getElementById('result').textContent = '❌ 請求失敗: ' + error.message;
-            }
-        }
+    <div class="container">
+        <h1>🛒 ECPay 測試頁面</h1>
+        <p>選擇測試金額，系統會自動建立訂單並跳轉到ECPay收銀台</p>
         
-        function setupECPayForm(ecpayForm) {
-            const form = document.getElementById('checkoutForm');
-            form.action = ecpayForm.action;
-            form.innerHTML = '';
-            
-            Object.entries(ecpayForm.params).forEach(([key, value]) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = value;
-                form.appendChild(input);
-            });
-            
-            const submitBtn = document.createElement('button');
-            submitBtn.type = 'submit';
-            submitBtn.className = 'btn';
-            submitBtn.style.background = '#FF5722';
-            submitBtn.textContent = '🚀 跳轉到 ECPay 收銀台';
-            form.appendChild(submitBtn);
-            
-            form.style.display = 'block';
-        }
-    </script>
+        <div style="text-align: center;">
+            <a href="/generate-ecpay-form?amount=199" class="amount-btn">NT$ 199</a>
+            <a href="/generate-ecpay-form?amount=299" class="amount-btn">NT$ 299</a>
+            <a href="/generate-ecpay-form?amount=499" class="amount-btn">NT$ 499</a>
+            <a href="/generate-ecpay-form?amount=999" class="amount-btn">NT$ 999</a>
+        </div>
+        
+        <div class="custom-form">
+            <h4>自訂金額</h4>
+            <form action="/generate-ecpay-form" method="GET" style="display: inline;">
+                <input type="number" name="amount" placeholder="輸入金額" min="1" max="6000" required>
+                <button type="submit" class="custom-btn">建立訂單</button>
+            </form>
+        </div>
+        
+        <p style="font-size: 14px; color: #999;">
+            ⚠️ 這會建立真實的ECPay訂單，請勿使用真實付款
+        </p>
+    </div>
 </body>
 </html>
   `);
+});
+
+// ECPay 表單生成端點 (伺服器端處理)
+app.get('/generate-ecpay-form', async (req, res) => {
+  const amount = parseInt(req.query.amount) || 299;
+  
+  if (amount < 1 || amount > 6000) {
+    return res.status(400).send('金額必須在 1-6000 之間');
+  }
+  
+  try {
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 10);
+    const clientOrderId = \`server_test_\${timestamp}_\${randomId}\`;
+    
+    // 建立訂單 (伺服器端)
+    const { createBarcodeOrder } = await import('./services/ecpay.js');
+    const orderResult = await createBarcodeOrder({
+      thirdPartyOrderId: timestamp,
+      merchantTradeNo: \`TPA\${timestamp.toString().slice(-8)}\${randomId.substring(0,3).toUpperCase()}001\`,
+      amount: amount,
+      productInfo: \`伺服器測試商品 - NT$\${amount}\`,
+      clientSystem: 'server-test',
+      storeType: '7ELEVEN',
+      customerInfo: null
+    });
+    
+    if (!orderResult.success) {
+      throw new Error(orderResult.message || '建立ECPay訂單失敗');
+    }
+    
+    // 生成純HTML表單頁面 (無JavaScript)
+    const ecpayForm = orderResult.paymentForm;
+    let hiddenInputs = '';
+    
+    Object.entries(ecpayForm.params).forEach(([key, value]) => {
+      hiddenInputs += \`<input type="hidden" name="\${key}" value="\${value}">\`;
+    });
+    
+    res.send(\`
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跳轉到ECPay收銀台</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 50px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: inline-block;
+            min-width: 400px;
+        }
+        .btn { 
+            background: #FF5722; 
+            color: white; 
+            padding: 20px 40px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 20px; 
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover { 
+            background: #E64A19; 
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .info { 
+            background: #e8f5e8; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0;
+            border-left: 5px solid #4CAF50;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 準備跳轉到ECPay</h1>
+        
+        <div class="info">
+            <h3>📋 訂單資訊</h3>
+            <p><strong>金額：</strong>NT$ \${amount}</p>
+            <p><strong>商品：</strong>伺服器測試商品</p>
+            <p><strong>付款方式：</strong>7-ELEVEN條碼付款</p>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ 注意：</strong>這會跳轉到真實的ECPay頁面，請勿進行實際付款
+        </div>
+        
+        <form method="\${ecpayForm.method}" action="\${ecpayForm.action}">
+            \${hiddenInputs}
+            <button type="submit" class="btn">💳 跳轉到 ECPay 收銀台</button>
+        </form>
+        
+        <p style="margin-top: 30px; color: #666; font-size: 14px;">
+            點擊上方按鈕將跳轉到ECPay官方收銀台頁面
+        </p>
+    </div>
+</body>
+</html>
+    \`);
+    
+  } catch (error) {
+    console.error('生成ECPay表單失敗:', error);
+    res.status(500).send(\`
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head><meta charset="UTF-8"><title>錯誤</title></head>
+<body style="font-family: Arial; text-align: center; padding: 50px;">
+    <h1 style="color: red;">❌ 建立訂單失敗</h1>
+    <p>\${error.message}</p>
+    <a href="/test-ecpay" style="color: blue;">返回測試頁面</a>
+</body>
+</html>
+    \`);
+  }
 });
 
 // Error handling middleware
