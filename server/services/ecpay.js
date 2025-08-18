@@ -1,13 +1,13 @@
 import crypto from 'crypto';
 import { allAsync, runSQL, getAsync } from '../database/database-adapter.js';
 
-// ECPay 設定 (正式環境配置)
+// ECPay 設定 (測試環境配置用於調試)
 const ECPAY_CONFIG = {
-  merchantID: process.env.ECPAY_MERCHANT_ID || '3466445',
-  hashKey: process.env.ECPAY_HASH_KEY || 'u0mKtzqI07btGNNT',
-  hashIV: process.env.ECPAY_HASH_IV || 'ZjAbsWWZUvOu8NA0',
-  testMode: false, // 使用正式環境
-  apiUrl: 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5', // 正式環境
+  merchantID: process.env.ECPAY_MERCHANT_ID || '2000132',
+  hashKey: process.env.ECPAY_HASH_KEY || '5294y06JbISpM5x9',
+  hashIV: process.env.ECPAY_HASH_IV || 'v77hoKGq4kWxNNIS',
+  testMode: true, // 暫時使用測試環境確保回調功能正常
+  apiUrl: 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5', // 測試環境
   returnURL: process.env.ECPAY_RETURN_URL || 'https://corba3c-production.up.railway.app/api/third-party/ecpay/callback',
   paymentInfoURL: process.env.ECPAY_PAYMENT_INFO_URL || 'https://corba3c-production.up.railway.app/api/third-party/ecpay/payment-info'
 };
