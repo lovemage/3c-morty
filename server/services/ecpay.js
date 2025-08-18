@@ -422,25 +422,24 @@ export async function createBarcodeOrder(orderData) {
     const responseText = await response.text();
     console.log('綠界Server端API回應:', responseText);
 
-    // 處理綠界API的回應
+    // 處理綠界API的回應 - 直接返回ECPay頁面模式
     if (response.ok) {
       console.log('綠界回應成功，狀態碼:', response.status);
       
-      // 綠界BARCODE通常通過PaymentInfoURL回調提供條碼資訊
-      // 這裡返回回調等待模式
-      console.log('綠界BARCODE訂單建立成功，等待PaymentInfoURL回調');
+      // 構建ECPay付款頁面URL（帶參數的POST表單提交URL）
+      const ecpayPageUrl = buildECPayFormURL(params);
+      
+      console.log('綠界BARCODE訂單建立成功，返回ECPay頁面URL');
       
       return {
         success: true,
-        mode: 'callback_pending',
+        mode: 'ecpay_redirect', // 直接跳轉ECPay模式
         merchantTradeNo,
-        barcode: null,
-        barcodeUrl: null,
-        paymentUrl: ECPAY_CONFIG.apiUrl,
+        paymentForm: ecpayPageUrl, // ECPay表單資訊
         paymentParams: params,
         expireDate: expireDate.toISOString(),
         ecpayResponse: responseText.substring(0, 200),
-        message: '條碼將透過PaymentInfoURL回調提供'
+        message: '請使用paymentForm資訊建立POST表單跳轉到ECPay頁面'
       };
     } else {
       console.error('綠界API回應錯誤:', response.status, responseText);
@@ -472,6 +471,18 @@ async function simulateECPayBarcodeAPI(params) {
     barcodeUrl: `https://payment-stage.ecpay.com.tw/SP/CreateQRCode?qdata=${encodeURIComponent(mockBarcode)}`,
     message: 'BARCODE建立成功',
     expireDate: params.StoreExpireDate
+  };
+}
+
+/**
+ * 構建ECPay付款資訊
+ * 返回ECPay URL和表單參數，供前端建立POST表單
+ */
+function buildECPayFormURL(params) {
+  return {
+    action: ECPAY_CONFIG.apiUrl,
+    method: 'POST',
+    params: params
   };
 }
 

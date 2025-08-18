@@ -106,7 +106,18 @@ router.post('/barcode/create',
     }
 
     // 根據ECPay回應模式處理
-    if (ecpayResult.mode === 'server_direct') {
+    if (ecpayResult.mode === 'ecpay_redirect') {
+      // ECPay跳轉模式：將支付表單資訊保存到訂單
+      await runSQL(`
+        UPDATE third_party_orders 
+        SET payment_url = ?, barcode_status = 'redirect_ready', expire_date = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [
+        ecpayResult.paymentForm.action, // ECPay API URL
+        ecpayResult.expireDate, 
+        thirdPartyOrderId
+      ]);
+    } else if (ecpayResult.mode === 'server_direct') {
       // Server端直接獲取到條碼資訊
       await runSQL(`
         UPDATE third_party_orders 
@@ -157,7 +168,24 @@ router.post('/barcode/create',
       customer_info_url: `${process.env.BASE_URL || 'https://corba3c-production.up.railway.app'}/customer-info/${thirdPartyOrderId}`
     };
 
-    if (ecpayResult.mode === 'server_direct') {
+    if (ecpayResult.mode === 'ecpay_redirect') {
+      // ECPay跳轉模式：返回支付表單資訊
+      responseData.barcode_status = 'redirect_ready';
+      responseData.payment_method = 'ecpay_redirect';
+      responseData.ecpay_form = {
+        action: ecpayResult.paymentForm.action,
+        method: ecpayResult.paymentForm.method,
+        params: ecpayResult.paymentForm.params
+      };
+      responseData.message = '訂單建立成功，請使用ecpay_form建立POST表單跳轉到ECPay頁面進行條碼付款';
+      responseData.integration_instructions = [
+        '使用ecpay_form.action作為表單的action URL',
+        '使用ecpay_form.method (POST)作為表單方法',
+        '將ecpay_form.params中的所有參數作為隱藏欄位添加到表單',
+        '提交表單將跳轉到ECPay條碼頁面',
+        '用戶完成付款後，系統會收到付款通知'
+      ];
+    } else if (ecpayResult.mode === 'server_direct') {
       // Server端直接模式：立即返回條碼資訊
       responseData.barcode_status = 'generated';
       responseData.barcode = ecpayResult.barcode;
