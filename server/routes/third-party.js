@@ -110,7 +110,7 @@ router.post('/barcode/create',
       // ECPay跳轉模式：將支付表單資訊保存到訂單
       await runSQL(`
         UPDATE third_party_orders 
-        SET payment_url = ?, barcode_status = 'redirect_ready', expire_date = ?, updated_at = CURRENT_TIMESTAMP
+        SET payment_url = ?, barcode_status = 'generated', expire_date = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `, [
         ecpayResult.paymentForm.action, // ECPay API URL
@@ -170,7 +170,7 @@ router.post('/barcode/create',
 
     if (ecpayResult.mode === 'ecpay_redirect') {
       // ECPay跳轉模式：返回支付表單資訊
-      responseData.barcode_status = 'redirect_ready';
+      responseData.barcode_status = 'generated';
       responseData.payment_method = 'ecpay_redirect';
       responseData.ecpay_form = {
         action: ecpayResult.paymentForm.action,
