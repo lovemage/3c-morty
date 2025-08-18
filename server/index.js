@@ -169,15 +169,15 @@ app.get('/generate-ecpay-form', async (req, res) => {
   try {
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 10);
-    const clientOrderId = \`server_test_\${timestamp}_\${randomId}\`;
+    const clientOrderId = `server_test_${timestamp}_${randomId}`;
     
     // 建立訂單 (伺服器端)
     const { createBarcodeOrder } = await import('./services/ecpay.js');
     const orderResult = await createBarcodeOrder({
       thirdPartyOrderId: timestamp,
-      merchantTradeNo: \`TPA\${timestamp.toString().slice(-8)}\${randomId.substring(0,3).toUpperCase()}001\`,
+      merchantTradeNo: `TPA${timestamp.toString().slice(-8)}${randomId.substring(0,3).toUpperCase()}001`,
       amount: amount,
-      productInfo: \`伺服器測試商品 - NT$\${amount}\`,
+      productInfo: `伺服器測試商品 - NT$${amount}`,
       clientSystem: 'server-test',
       storeType: '7ELEVEN',
       customerInfo: null
@@ -192,10 +192,10 @@ app.get('/generate-ecpay-form', async (req, res) => {
     let hiddenInputs = '';
     
     Object.entries(ecpayForm.params).forEach(([key, value]) => {
-      hiddenInputs += \`<input type="hidden" name="\${key}" value="\${value}">\`;
+      hiddenInputs += `<input type="hidden" name="${key}" value="${value}">`;
     });
     
-    res.send(\`
+    res.send(`
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -257,7 +257,7 @@ app.get('/generate-ecpay-form', async (req, res) => {
         
         <div class="info">
             <h3>📋 訂單資訊</h3>
-            <p><strong>金額：</strong>NT$ \${amount}</p>
+            <p><strong>金額：</strong>NT$ ${amount}</p>
             <p><strong>商品：</strong>伺服器測試商品</p>
             <p><strong>付款方式：</strong>7-ELEVEN條碼付款</p>
         </div>
@@ -266,8 +266,8 @@ app.get('/generate-ecpay-form', async (req, res) => {
             <strong>⚠️ 注意：</strong>這會跳轉到真實的ECPay頁面，請勿進行實際付款
         </div>
         
-        <form method="\${ecpayForm.method}" action="\${ecpayForm.action}">
-            \${hiddenInputs}
+        <form method="${ecpayForm.method}" action="${ecpayForm.action}">
+            ${hiddenInputs}
             <button type="submit" class="btn">💳 跳轉到 ECPay 收銀台</button>
         </form>
         
@@ -277,21 +277,21 @@ app.get('/generate-ecpay-form', async (req, res) => {
     </div>
 </body>
 </html>
-    \`);
+    `);
     
   } catch (error) {
     console.error('生成ECPay表單失敗:', error);
-    res.status(500).send(\`
+    res.status(500).send(`
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head><meta charset="UTF-8"><title>錯誤</title></head>
 <body style="font-family: Arial; text-align: center; padding: 50px;">
     <h1 style="color: red;">❌ 建立訂單失敗</h1>
-    <p>\${error.message}</p>
+    <p>${error.message}</p>
     <a href="/test-ecpay" style="color: blue;">返回測試頁面</a>
 </body>
 </html>
-    \`);
+    `);
   }
 });
 
