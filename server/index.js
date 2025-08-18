@@ -171,24 +171,33 @@ app.get('/generate-ecpay-form', async (req, res) => {
     const randomId = Math.random().toString(36).substring(2, 10);
     const clientOrderId = `server_test_${timestamp}_${randomId}`;
     
-    // 建立訂單 (伺服器端)
-    const { createBarcodeOrder } = await import('./services/ecpay.js');
-    const orderResult = await createBarcodeOrder({
-      thirdPartyOrderId: timestamp,
-      merchantTradeNo: `TPA${timestamp.toString().slice(-8)}${randomId.substring(0,3).toUpperCase()}001`,
-      amount: amount,
-      productInfo: `伺服器測試商品 - NT$${amount}`,
-      clientSystem: 'server-test',
-      storeType: '7ELEVEN',
-      customerInfo: null
+    // 生成更唯一的商家交易編號
+    const uniqueTimestamp = Date.now().toString();
+    const uniqueRandom = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const merchantTradeNo = `TEST${uniqueTimestamp.slice(-10)}${uniqueRandom}`;
+    
+    // 建立訂單 (直接呼叫API)
+    const response = await fetch(`${req.protocol}://${req.get('host')}/api/third-party/barcode/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+      },
+      body: JSON.stringify({
+        amount: amount,
+        client_order_id: clientOrderId,
+        callback_url: `${req.protocol}://${req.get('host')}/webhook-test`
+      })
     });
     
-    if (!orderResult.success) {
-      throw new Error(orderResult.message || '建立ECPay訂單失敗');
+    const orderResult = await response.json();
+    
+    if (!response.ok || !orderResult.success) {
+      throw new Error(orderResult.message || `API呼叫失敗: ${response.status}`);
     }
     
     // 生成純HTML表單頁面 (無JavaScript)
-    const ecpayForm = orderResult.paymentForm;
+    const ecpayForm = orderResult.data.ecpay_form;
     let hiddenInputs = '';
     
     Object.entries(ecpayForm.params).forEach(([key, value]) => {
