@@ -1,17 +1,15 @@
 import crypto from 'crypto';
 import { allAsync, runSQL, getAsync } from '../database/database-adapter.js';
 
-// ECPay 設定 (正式環境)
+// ECPay 設定 (正式環境配置)
 const ECPAY_CONFIG = {
   merchantID: process.env.ECPAY_MERCHANT_ID || '3466445',
   hashKey: process.env.ECPAY_HASH_KEY || 'u0mKtzqI07btGNNT',
   hashIV: process.env.ECPAY_HASH_IV || 'ZjAbsWWZUvOu8NA0',
-  testMode: process.env.NODE_ENV !== 'production',
-  apiUrl: process.env.NODE_ENV === 'production' 
-    ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
-    : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
-  returnURL: process.env.ECPAY_RETURN_URL || 'http://localhost:3001/api/third-party/ecpay/callback',
-  paymentInfoURL: process.env.ECPAY_PAYMENT_INFO_URL || 'http://localhost:3001/api/third-party/ecpay/payment-info'
+  testMode: false, // 使用正式環境
+  apiUrl: 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5', // 正式環境
+  returnURL: process.env.ECPAY_RETURN_URL || 'https://corba3c-production.up.railway.app/api/third-party/ecpay/callback',
+  paymentInfoURL: process.env.ECPAY_PAYMENT_INFO_URL || 'https://corba3c-production.up.railway.app/api/third-party/ecpay/payment-info'
 };
 
 /**
@@ -424,25 +422,43 @@ export async function createBarcodeOrder(orderData) {
     const responseText = await response.text();
     console.log('綠界回應:', responseText);
 
-    // 綠界的BARCODE回應是HTML格式，需要解析
-    if (response.ok && responseText.includes('ECPay')) {
-      // 成功的情況：綠界會返回包含條碼資訊的HTML頁面
-      // 實際專案中，應該解析HTML取得條碼數據
-      // 這裡暫時使用模擬數據，但保留真實的API調用流程
+    // 綠界的BARCODE回應處理
+    if (response.ok) {
+      console.log('綠界回應成功，狀態碼:', response.status);
       
-      const mockBarcode = generateMockBarcode();
+      // 根據綠界文件，BARCODE 會透過 PaymentInfoURL 回傳條碼資訊
+      // 這裡先返回成功狀態，條碼資訊會透過 PaymentInfoURL 回調取得
       const tradeNo = `EC${Date.now()}${Math.random().toString(36).substring(2, 6)}`;
+      
+      // 解析回應中的條碼資訊 (如果有的話)
+      let barcode = null;
+      let barcodeUrl = null;
+      
+      // 嘗試從HTML回應中提取條碼資訊
+      const barcodeMatch = responseText.match(/barcode['":][\s]*['"]([^'"]+)['"]/i);
+      const paymentUrlMatch = responseText.match(/payment[_]?url['":][\s]*['"]([^'"]+)['"]/i);
+      
+      if (barcodeMatch) {
+        barcode = barcodeMatch[1];
+        barcodeUrl = `https://payment.ecpay.com.tw/SP/CreateQRCode?qdata=${encodeURIComponent(barcode)}`;
+      } else {
+        // 如果無法從回應中解析到條碼，使用預設格式
+        // 注意：真實環境中應該等待 PaymentInfoURL 回調
+        barcode = `待取號-${merchantTradeNo}`;
+        barcodeUrl = `${ECPAY_CONFIG.apiUrl}?MerchantTradeNo=${merchantTradeNo}`;
+      }
       
       return {
         success: true,
         merchantTradeNo,
-        barcode: mockBarcode,
-        barcodeUrl: `https://payment-stage.ecpay.com.tw/SP/CreateQRCode?qdata=${encodeURIComponent(mockBarcode)}`,
+        barcode: barcode,
+        barcodeUrl: barcodeUrl,
         paymentUrl: ECPAY_CONFIG.apiUrl,
         paymentParams: params,
         expireDate: expireDate.toISOString(),
         tradeNo: tradeNo,
-        ecpayResponse: responseText.substring(0, 200) // 保留部分回應用於調試
+        ecpayResponse: responseText.substring(0, 500), // 增加回應長度用於調試
+        message: '條碼將透過PaymentInfoURL回調提供'
       };
     } else {
       console.error('綠界API回應錯誤:', response.status, responseText);
