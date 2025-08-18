@@ -31,15 +31,24 @@ router.post('/barcode/create',
       callback_url
     } = req.body;
 
+    // 驗證和轉換金額
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (typeof numAmount !== 'number' || isNaN(numAmount) || numAmount <= 0 || numAmount > 6000) {
+      return res.status(400).json({
+        error: true,
+        message: '金額必須是正整數，範圍為1-6000元'
+      });
+    }
+
     // 自動生成其他參數
-    const product_info = `3C商品一組 - NT$${amount}`;
+    const product_info = `3C商品一組 - NT$${numAmount}`;
     const store_type = '7ELEVEN'; // 預設使用7-ELEVEN
     const customer_info = null; // 由客戶後續填寫
 
     // 記錄建立訂單請求
     securityLog('info', '第三方BARCODE訂單建立請求', req, {
       client_system: req.clientInfo.system,
-      amount,
+      amount: numAmount,
       client_order_id
     });
 
@@ -53,14 +62,6 @@ router.post('/barcode/create',
     }
 
     // 便利店類型已自動設定為7-ELEVEN，無需驗證
-
-    // 驗證金額
-    if (typeof amount !== 'number' || amount <= 0 || amount > 6000) {
-      return res.status(400).json({
-        error: true,
-        message: '金額必須是正整數，範圍為1-6000元'
-      });
-    }
 
     // 檢查是否已存在相同的外部訂單號
     const existingOrder = await getAsync(
@@ -80,7 +81,7 @@ router.post('/barcode/create',
       INSERT INTO third_party_orders (
         external_order_id, client_system, amount, product_info, callback_url, status
       ) VALUES (?, ?, ?, ?, ?, 'pending')
-    `, [client_order_id, req.clientInfo.system, amount, product_info, callback_url || null]);
+    `, [client_order_id, req.clientInfo.system, numAmount, product_info, callback_url || null]);
 
     const thirdPartyOrderId = result.lastInsertRowid;
 
@@ -91,7 +92,7 @@ router.post('/barcode/create',
     const ecpayResult = await createBarcodeOrder({
       thirdPartyOrderId,
       merchantTradeNo,
-      amount,
+      amount: numAmount,
       productInfo: product_info,
       clientSystem: req.clientInfo.system,
       storeType: store_type,
@@ -116,7 +117,7 @@ router.post('/barcode/create',
       INSERT INTO ecpay_transactions (
         third_party_order_id, merchant_trade_no, amount, payment_type, response_code, response_msg, raw_response
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [thirdPartyOrderId, merchantTradeNo, amount, 'BARCODE', '1', 'SUCCESS', JSON.stringify(ecpayResult)]);
+    `, [thirdPartyOrderId, merchantTradeNo, numAmount, 'BARCODE', '1', 'SUCCESS', JSON.stringify(ecpayResult)]);
 
     res.status(201).json({
       success: true,
@@ -125,7 +126,7 @@ router.post('/barcode/create',
         client_order_id: client_order_id,
         merchant_trade_no: merchantTradeNo,
         store_type: store_type,
-        amount: amount,
+        amount: numAmount,
         barcode: ecpayResult.barcode, // 重要：返回條碼資料
         barcode_url: ecpayResult.barcodeUrl,
         expire_date: ecpayResult.expireDate,
