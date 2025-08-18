@@ -79,8 +79,10 @@ export async function createCVSOrder(orderData) {
     clientSystem 
   } = orderData;
 
-  // 產生唯一的商店交易編號
-  const merchantTradeNo = `TP${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  // 產生唯一的商店交易編號（確保符合ECPay 20字符限制）
+  const timestamp = Date.now().toString().slice(-10); // 取時間戳後10位
+  const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase(); // 4位隨機字符
+  const merchantTradeNo = `TP${timestamp}${randomStr}`; // 總長度: 2+10+4=16字符
   
   // 計算到期時間（7天後）
   const expireDate = new Date();

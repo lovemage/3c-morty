@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECPay 收銀台跳轉測試</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            background: #f8f9ff;
+        }
+        
+        .step h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .response {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #ecpayForm {
+            display: none;
+        }
+        
+        .checkout-info {
+            background: #e8f5e8;
+            border: 1px solid #b8e6b8;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .checkout-info h4 {
+            color: #2d5a2d;
+            margin-bottom: 10px;
+        }
+        
+        .auto-submit-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 ECPay 收銀台跳轉測試</h1>
+            <p>測試廠商API → ECPay跳轉流程</p>
+        </div>
+        
+        <div class="content">
+            <div class="step">
+                <h3>
+                    <span class="step-number">1</span>
+                    建立測試訂單
+                </h3>
+                
+                <div class="form-group">
+                    <label for="amount">商品金額 (NT$)</label>
+                    <input type="number" id="amount" value="299" min="1" max="6000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="orderName">訂單名稱</label>
+                    <input type="text" id="orderName" value="測試商品購買">
+                </div>
+                
+                <div class="form-group">
+                    <label for="callbackUrl">回調URL (可選)</label>
+                    <input type="url" id="callbackUrl" value="https://webhook.site/test" placeholder="https://your-site.com/webhook">
+                </div>
+                
+                <button class="btn" onclick="createOrder()">
+                    <span id="createOrderLoading" style="display: none;" class="loading"></span>
+                    建立訂單並獲取ECPay表單
+                </button>
+                
+                <div id="apiResponse" class="response" style="display: none;"></div>
+            </div>
+            
+            <div class="step">
+                <h3>
+                    <span class="step-number">2</span>
+                    ECPay 跳轉處理
+                </h3>
+                
+                <div id="checkoutSection" style="display: none;">
+                    <div class="checkout-info">
+                        <h4>📋 訂單資訊</h4>
+                        <p><strong>訂單編號:</strong> <span id="orderIdDisplay">-</span></p>
+                        <p><strong>商家交易號:</strong> <span id="merchantTradeNoDisplay">-</span></p>
+                        <p><strong>金額:</strong> NT$ <span id="amountDisplay">-</span></p>
+                        <p><strong>到期時間:</strong> <span id="expireDisplay">-</span></p>
+                    </div>
+                    
+                    <div class="auto-submit-notice">
+                        <p><strong>⚡ 自動跳轉模式</strong></p>
+                        <p>點擊下方按鈕將自動跳轉到ECPay收銀台頁面</p>
+                    </div>
+                    
+                    <button class="btn" onclick="submitToECPay()" id="checkoutBtn">
+                        🚀 跳轉到 ECPay 收銀台
+                    </button>
+                </div>
+                
+                <!-- 隱藏的ECPay表單 -->
+                <form id="ecpayForm" method="POST" target="_blank">
+                    <!-- 動態生成的隱藏欄位將在這裡插入 -->
+                </form>
+            </div>
+            
+            <div class="step">
+                <h3>
+                    <span class="step-number">3</span>
+                    付款完成
+                </h3>
+                <p>在ECPay頁面完成條碼付款後，系統會自動收到通知並更新訂單狀態。</p>
+                <p>您可以關閉ECPay頁面並檢查訂單狀態。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentOrderData = null;
+        
+        // 建立訂單
+        async function createOrder() {
+            const amount = document.getElementById('amount').value;
+            const orderName = document.getElementById('orderName').value;
+            const callbackUrl = document.getElementById('callbackUrl').value;
+            
+            if (!amount || amount < 1 || amount > 6000) {
+                alert('請輸入有效的金額 (1-6000)');
+                return;
+            }
+            
+            const createBtn = document.querySelector('.btn');
+            const loading = document.getElementById('createOrderLoading');
+            const responseDiv = document.getElementById('apiResponse');
+            
+            // 顯示載入狀態
+            createBtn.disabled = true;
+            loading.style.display = 'inline-block';
+            responseDiv.style.display = 'none';
+            
+            try {
+                const timestamp = Date.now();
+                const randomStr = Math.random().toString(36).substring(2, 8);
+                const clientOrderId = `web_test_${timestamp}_${randomStr}`;
+                
+                const response = await fetch('https://corba3c-production.up.railway.app/api/third-party/barcode/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+                    },
+                    body: JSON.stringify({
+                        amount: parseInt(amount),
+                        client_order_id: clientOrderId,
+                        callback_url: callbackUrl || undefined
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // 顯示API回應
+                responseDiv.style.display = 'block';
+                if (response.ok && data.success) {
+                    responseDiv.className = 'response success';
+                    responseDiv.textContent = JSON.stringify(data, null, 2);
+                    
+                    // 儲存訂單資料
+                    currentOrderData = data.data;
+                    
+                    // 顯示第二步驟
+                    setupCheckoutSection(data.data);
+                } else {
+                    responseDiv.className = 'response error';
+                    responseDiv.textContent = JSON.stringify(data, null, 2);
+                }
+                
+            } catch (error) {
+                responseDiv.style.display = 'block';
+                responseDiv.className = 'response error';
+                responseDiv.textContent = '請求失敗: ' + error.message;
+            } finally {
+                // 恢復按鈕狀態
+                createBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+        
+        // 設置結帳區塊
+        function setupCheckoutSection(orderData) {
+            const checkoutSection = document.getElementById('checkoutSection');
+            
+            // 更新顯示資訊
+            document.getElementById('orderIdDisplay').textContent = orderData.order_id;
+            document.getElementById('merchantTradeNoDisplay').textContent = orderData.merchant_trade_no;
+            document.getElementById('amountDisplay').textContent = orderData.amount;
+            document.getElementById('expireDisplay').textContent = new Date(orderData.expire_date).toLocaleString('zh-TW');
+            
+            // 準備ECPay表單
+            setupECPayForm(orderData.ecpay_form);
+            
+            // 顯示結帳區塊
+            checkoutSection.style.display = 'block';
+            
+            // 滾動到結帳區塊
+            checkoutSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 設置ECPay表單
+        function setupECPayForm(ecpayForm) {
+            const form = document.getElementById('ecpayForm');
+            
+            // 設置表單action
+            form.action = ecpayForm.action;
+            form.method = ecpayForm.method;
+            
+            // 清空現有內容
+            form.innerHTML = '';
+            
+            // 添加所有參數作為隱藏欄位
+            Object.entries(ecpayForm.params).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            });
+        }
+        
+        // 提交到ECPay
+        function submitToECPay() {
+            if (!currentOrderData || !currentOrderData.ecpay_form) {
+                alert('請先建立訂單');
+                return;
+            }
+            
+            const form = document.getElementById('ecpayForm');
+            
+            // 確認跳轉
+            if (confirm('即將跳轉到ECPay收銀台頁面，是否繼續？')) {
+                console.log('提交到ECPay:', currentOrderData.ecpay_form);
+                form.submit();
+                
+                // 更新按鈕狀態
+                const btn = document.getElementById('checkoutBtn');
+                btn.textContent = '✅ 已跳轉到ECPay (可重新跳轉)';
+                btn.style.background = '#28a745';
+            }
+        }
+        
+        // 頁面載入完成後的初始設置
+        document.addEventListener('DOMContentLoaded', function() {
+            // 設置預設值
+            const orderNameInput = document.getElementById('orderName');
+            orderNameInput.value = `測試商品 - ${new Date().toLocaleString('zh-TW')}`;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>訂單22 - 自動跳轉到綠界</title>
+</head>
+<body>
+    <h2>訂單22 - 正在跳轉到綠界條碼頁面...</h2>
+    <p>如果沒有自動跳轉，請點擊下方按鈕：</p>
+    
+    <form id="autoSubmitForm" action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5" method="POST">
+        <input type="hidden" name="MerchantID" value="3466445">
+        <input type="hidden" name="MerchantTradeNo" value="TPA1755504222589022">
+        <input type="hidden" name="MerchantTradeDate" value="2025/08/18 08:03:42">
+        <input type="hidden" name="PaymentType" value="aio">
+        <input type="hidden" name="TotalAmount" value="30">
+        <input type="hidden" name="TradeDesc" value="7ELEVEN便利店條碼付款">
+        <input type="hidden" name="ItemName" value="3C商品一組 - NT$30">
+        <input type="hidden" name="ReturnURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/callback">
+        <input type="hidden" name="ChoosePayment" value="BARCODE">
+        <input type="hidden" name="EncryptType" value="1">
+        <input type="hidden" name="StoreExpireDate" value="7">
+        <input type="hidden" name="PaymentInfoURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/payment-info">
+        <input type="hidden" name="Desc_1" value="7-ELEVEN">
+        <input type="hidden" name="CheckMacValue" value="25538DAA70E47394FEE3EDEFC52163FB9DCB511BC14DBF91B23336D7D15EE3B4">
+        <button type="submit" style="padding: 10px 20px; font-size: 16px;">前往綠界付款</button>
+    </form>
+
+    <script>
+        // 3秒後自動提交表單
+        setTimeout(function() {
+            document.getElementById('autoSubmitForm').submit();
+        }, 3000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECPay 30元條碼付款測試</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .order-info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 ECPay條碼付款測試</h1>
+        
+        <div class="order-info">
+            <h3>📋 訂單資訊</h3>
+            <p><strong>訂單號:</strong> TPA1755504222589022</p>
+            <p><strong>金額:</strong> NT$ 30</p>
+            <p><strong>商品:</strong> 3C商品一組 - NT$30</p>
+            <p><strong>付款方式:</strong> 7-ELEVEN 超商條碼</p>
+        </div>
+
+        <p><strong>點擊下方按鈕將跳轉到ECPay頁面獲取條碼：</strong></p>
+        
+        <!-- ECPay POST 表單 -->
+        <form id="ecpay-form" action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5" method="POST" target="_blank">
+            <input type="hidden" name="MerchantID" value="3466445">
+            <input type="hidden" name="MerchantTradeNo" value="TPA1755504222589022">
+            <input type="hidden" name="MerchantTradeDate" value="2025/08/18 08:03:42">
+            <input type="hidden" name="PaymentType" value="aio">
+            <input type="hidden" name="TotalAmount" value="30">
+            <input type="hidden" name="TradeDesc" value="7ELEVEN便利店條碼付款">
+            <input type="hidden" name="ItemName" value="3C商品一組 - NT$30">
+            <input type="hidden" name="ReturnURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/callback">
+            <input type="hidden" name="ChoosePayment" value="BARCODE">
+            <input type="hidden" name="EncryptType" value="1">
+            <input type="hidden" name="StoreExpireDate" value="7">
+            <input type="hidden" name="PaymentInfoURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/payment-info">
+            <input type="hidden" name="Desc_1" value="7-ELEVEN">
+            <input type="hidden" name="CheckMacValue" value="25538DAA70E47394FEE3EDEFC52163FB9DCB511BC14DBF91B23336D7D15EE3B4">
+            
+            <button type="submit">🚀 前往ECPay獲取條碼</button>
+        </form>
+
+        <div class="info">
+            <p><strong>📱 測試流程：</strong></p>
+            <ol>
+                <li>點擊按鈕會在新窗口開啟ECPay頁面</li>
+                <li>ECPay會顯示條碼付款資訊</li>
+                <li>複製條碼號碼或截圖條碼</li>
+                <li>到7-ELEVEN向店員說要繳費，並提供條碼</li>
+                <li>付款完成後，ECPay會通知我們的系統</li>
+            </ol>
+            
+            <p><strong>⚠️ 注意事項：</strong></p>
+            <ul>
+                <li>這是測試環境，可能不會產生真實的扣款</li>
+                <li>條碼有效期為7天</li>
+                <li>付款完成後請檢查系統回調狀態</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

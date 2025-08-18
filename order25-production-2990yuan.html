@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>訂單25 - 正式環境 NT$2990 條碼付款</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container { 
+            max-width: 700px; 
+            margin: 0 auto; 
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 18px 35px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            cursor: pointer; 
+            margin: 15px 0;
+            width: 100%;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: transform 0.2s;
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .production-alert {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .order-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .api-info {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .amount-highlight {
+            font-size: 24px;
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏪 正式環境條碼付款測試</h1>
+            <p class="success-badge">✅ 正式環境 API 測試成功</p>
+        </div>
+        
+        <div class="production-alert">
+            <h3>⚠️ ECPay 正式環境警告</h3>
+            <p>這是真實的ECPay正式環境！點擊下方按鈕會產生真實交易！</p>
+            <p><strong>金額: NT$2,990 元</strong> - 請謹慎操作！</p>
+        </div>
+        
+        <div class="order-details">
+            <h3>📋 訂單資訊 (按API文檔格式)</h3>
+            <p><strong>訂單ID:</strong> 25</p>
+            <p><strong>客戶訂單號:</strong> MERCHANT_ORDER_001</p>
+            <p><strong>商家訂單號:</strong> TPA1755505075171025</p>
+            <p><strong>金額:</strong> <span class="amount-highlight">NT$ 2,990</span></p>
+            <p><strong>商品:</strong> 3C商品一組 - NT$2990</p>
+            <p><strong>付款方式:</strong> 7-ELEVEN 條碼付款</p>
+            <p><strong>有效期限:</strong> 7天</p>
+        </div>
+
+        <div class="api-info">
+            <h4>🔧 API測試成功資訊</h4>
+            <p><strong>環境:</strong> ECPay正式環境 ✅</p>
+            <p><strong>商店ID:</strong> 3466445 (正式環境) ✅</p>
+            <p><strong>Action URL:</strong> https://payment.ecpay.com.tw ✅</p>
+            <p><strong>CheckMacValue:</strong> 2D68AB85AF580D1D6C81EC652AD0AAF28EDCD661B84CB1652DC81C1799825D00</p>
+            <p><strong>API格式:</strong> 完全符合第四方網站API說明.md ✅</p>
+        </div>
+
+        <p style="text-align: center; font-size: 18px; margin: 30px 0;">
+            <strong>🚀 點擊下方按鈕進入ECPay正式環境取得條碼</strong>
+        </p>
+
+        <!-- ECPay正式環境POST表單 -->
+        <form action="https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5" method="POST" target="_blank">
+            <input type="hidden" name="MerchantID" value="3466445">
+            <input type="hidden" name="MerchantTradeNo" value="TPA1755505075171025">
+            <input type="hidden" name="MerchantTradeDate" value="2025/08/18 08:17:55">
+            <input type="hidden" name="PaymentType" value="aio">
+            <input type="hidden" name="TotalAmount" value="2990">
+            <input type="hidden" name="TradeDesc" value="7ELEVEN便利店條碼付款">
+            <input type="hidden" name="ItemName" value="3C商品一組 - NT$2990">
+            <input type="hidden" name="ReturnURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/callback">
+            <input type="hidden" name="ChoosePayment" value="BARCODE">
+            <input type="hidden" name="EncryptType" value="1">
+            <input type="hidden" name="StoreExpireDate" value="7">
+            <input type="hidden" name="PaymentInfoURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/payment-info">
+            <input type="hidden" name="Desc_1" value="7-ELEVEN">
+            <input type="hidden" name="CheckMacValue" value="2D68AB85AF580D1D6C81EC652AD0AAF28EDCD661B84CB1652DC81C1799825D00">
+            
+            <button type="submit">🎯 前往 ECPay 正式環境 (NT$2,990)</button>
+        </form>
+
+        <div class="api-info">
+            <h4>📊 測試結果摘要</h4>
+            <ul>
+                <li>✅ 正式環境API調用成功</li>
+                <li>✅ 按照API文檔格式(amount: 2990, client_order_id: MERCHANT_ORDER_001)</li>
+                <li>✅ 獲得完整ECPay正式環境跳轉參數</li>
+                <li>✅ CheckMacValue計算正確</li>
+                <li>✅ 廠商可以使用此格式進行真實訂單</li>
+            </ul>
+        </div>
+
+        <div class="production-alert">
+            <p><strong>重要提醒：</strong>這是真實的ECPay正式環境測試，跳轉後會顯示真實條碼，可以在便利商店實際付款！</p>
+        </div>
+    </div>
+</body>
+</html>

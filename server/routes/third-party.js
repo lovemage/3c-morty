@@ -85,8 +85,10 @@ router.post('/barcode/create',
 
     const thirdPartyOrderId = result.lastInsertRowid;
 
-    // 生成唯一的商家訂單編號
-    const merchantTradeNo = `TPA${Date.now()}${String(thirdPartyOrderId).padStart(3, '0')}`;
+    // 生成唯一的商家訂單編號（確保符合ECPay 20字符限制）
+    const timestamp = Date.now().toString().slice(-8); // 取時間戳後8位
+    const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase(); // 3位隨機字符
+    const merchantTradeNo = `TPA${timestamp}${randomStr}${String(thirdPartyOrderId).padStart(3, '0')}`; // 總長度: 3+8+3+3=17字符
 
     // 建立綠界BARCODE訂單
     const ecpayResult = await createBarcodeOrder({
