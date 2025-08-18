@@ -130,6 +130,8 @@ const createTables = async () => {
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'expired', 'cancelled')),
       payment_code TEXT,
       payment_url TEXT,
+      barcode_data TEXT, -- JSON格式儲存條碼詳細資訊
+      barcode_status TEXT DEFAULT 'pending' CHECK(barcode_status IN ('pending', 'generated', 'expired')), -- 條碼狀態
       expire_date DATETIME,
       paid_at DATETIME,
       internal_order_id INTEGER,
@@ -151,6 +153,8 @@ const createTables = async () => {
       response_code TEXT,
       response_msg TEXT,
       raw_response TEXT,
+      barcode_info TEXT, -- JSON格式儲存條碼詳細資訊
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (third_party_order_id) REFERENCES third_party_orders (id)
     )`,
