@@ -402,51 +402,25 @@ export async function createBarcodeOrder(orderData) {
   params.CheckMacValue = generateCheckMacValue(params, ECPAY_CONFIG.hashKey, ECPAY_CONFIG.hashIV);
 
   try {
-    // 使用真實的綠界支付流程
-
-    // 使用fetch向綠界API發送POST請求
-    const formData = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      formData.append(key, value.toString());
-    });
-
-    console.log('向綠界發送BARCODE請求:', params);
+    // 直接返回ECPay表單資訊，不向ECPay發送請求
+    // 因為ECPay的POST端點是用來顯示支付頁面的，不是API
     
-    const response = await fetch(ECPAY_CONFIG.apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0'
-      },
-      body: formData.toString()
-    });
-
-    const responseText = await response.text();
-    console.log('綠界Server端API回應:', responseText);
-
-    // 處理綠界API的回應 - 直接返回ECPay頁面模式
-    if (response.ok) {
-      console.log('綠界回應成功，狀態碼:', response.status);
-      
-      // 構建ECPay付款頁面URL（帶參數的POST表單提交URL）
-      const ecpayPageUrl = buildECPayFormURL(params);
-      
-      console.log('綠界BARCODE訂單建立成功，返回ECPay頁面URL');
-      
-      return {
-        success: true,
-        mode: 'ecpay_redirect', // 直接跳轉ECPay模式
-        merchantTradeNo,
-        paymentForm: ecpayPageUrl, // ECPay表單資訊
-        paymentParams: params,
-        expireDate: expireDate.toISOString(),
-        ecpayResponse: responseText.substring(0, 200),
-        message: '請使用paymentForm資訊建立POST表單跳轉到ECPay頁面'
-      };
-    } else {
-      console.error('綠界API回應錯誤:', response.status, responseText);
-      throw new Error('綠界BARCODE訂單建立失敗: ' + response.status);
-    }
+    console.log('生成ECPay BARCODE訂單參數:', params);
+    
+    // 構建ECPay付款頁面表單資訊
+    const ecpayPageUrl = buildECPayFormURL(params);
+    
+    console.log('ECPay BARCODE訂單建立成功，準備跳轉');
+    
+    return {
+      success: true,
+      mode: 'ecpay_redirect', // 直接跳轉ECPay模式
+      merchantTradeNo,
+      paymentForm: ecpayPageUrl, // ECPay表單資訊
+      paymentParams: params,
+      expireDate: expireDate.toISOString(),
+      message: '請使用paymentForm資訊建立POST表單跳轉到ECPay頁面'
+    };
 
   } catch (error) {
     console.error('ECPay BARCODE 訂單建立失敗:', error);
