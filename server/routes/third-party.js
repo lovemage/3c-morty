@@ -105,60 +105,93 @@ router.post('/barcode/create',
       throw new Error(ecpayResult.message || '綠界BARCODE訂單建立失敗');
     }
 
-    // 更新訂單資訊
-    await runSQL(`
-      UPDATE third_party_orders 
-      SET payment_code = ?, payment_url = ?, expire_date = ?
-      WHERE id = ?
-    `, [ecpayResult.barcode, ecpayResult.paymentUrl, ecpayResult.expireDate, thirdPartyOrderId]);
+    // 根據ECPay回應模式處理
+    if (ecpayResult.mode === 'server_direct') {
+      // Server端直接獲取到條碼資訊
+      await runSQL(`
+        UPDATE third_party_orders 
+        SET payment_code = ?, payment_url = ?, barcode_data = ?, barcode_status = 'generated', expire_date = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [
+        ecpayResult.barcode, 
+        ecpayResult.barcodeUrl, 
+        JSON.stringify(ecpayResult.barcodeSegments),
+        ecpayResult.expireDate, 
+        thirdPartyOrderId
+      ]);
+    } else {
+      // 回調等待模式
+      await runSQL(`
+        UPDATE third_party_orders 
+        SET payment_code = ?, payment_url = ?, barcode_status = 'pending', expire_date = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [ecpayResult.barcode || null, ecpayResult.paymentUrl, ecpayResult.expireDate, thirdPartyOrderId]);
+    }
 
     // 記錄綠界交易
     await runSQL(`
       INSERT INTO ecpay_transactions (
-        third_party_order_id, merchant_trade_no, amount, payment_type, response_code, response_msg, raw_response
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [thirdPartyOrderId, merchantTradeNo, numAmount, 'BARCODE', '1', 'SUCCESS', JSON.stringify(ecpayResult)]);
+        third_party_order_id, merchant_trade_no, amount, payment_type, response_code, response_msg, raw_response, trade_no, barcode_info
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      thirdPartyOrderId, 
+      merchantTradeNo, 
+      numAmount, 
+      'BARCODE', 
+      '1', 
+      'SUCCESS', 
+      JSON.stringify(ecpayResult),
+      ecpayResult.tradeNo || null,
+      ecpayResult.barcodeSegments ? JSON.stringify(ecpayResult.barcodeSegments) : null
+    ]);
 
-    // 更新訂單條碼狀態為等待綠界回調
-    await runSQL(`
-      UPDATE third_party_orders 
-      SET barcode_status = 'pending', updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `, [thirdPartyOrderId]);
+    // 根據ECPay回應模式返回不同的結果
+    const responseData = {
+      order_id: thirdPartyOrderId,
+      client_order_id: client_order_id,
+      merchant_trade_no: merchantTradeNo,
+      trade_no: ecpayResult.tradeNo || null,
+      store_type: store_type,
+      amount: numAmount,
+      expire_date: ecpayResult.expireDate,
+      customer_info_url: `${process.env.BASE_URL || 'https://corba3c-production.up.railway.app'}/customer-info/${thirdPartyOrderId}`
+    };
+
+    if (ecpayResult.mode === 'server_direct') {
+      // Server端直接模式：立即返回條碼資訊
+      responseData.barcode_status = 'generated';
+      responseData.barcode = ecpayResult.barcode;
+      responseData.barcode_url = ecpayResult.barcodeUrl;
+      responseData.barcode_segments = {
+        barcode_1: ecpayResult.barcodeSegments.barcode1,
+        barcode_2: ecpayResult.barcodeSegments.barcode2,
+        barcode_3: ecpayResult.barcodeSegments.barcode3
+      };
+      responseData.message = '條碼已生成完成，可直接使用';
+      responseData.usage_instructions = [
+        '請至便利商店櫃台出示此條碼',
+        '可使用條碼圖片或告知店員三段條碼號碼',
+        '條碼有效期限至 ' + new Date(ecpayResult.expireDate).toLocaleString('zh-TW')
+      ];
+    } else {
+      // 回調等待模式：異步生成
+      responseData.barcode_status = 'pending';
+      responseData.barcode = null;
+      responseData.barcode_url = null;
+      responseData.barcode_segments = {
+        barcode_1: null,
+        barcode_2: null,
+        barcode_3: null
+      };
+      responseData.barcode_status_url = `${process.env.BASE_URL || 'https://corba3c-production.up.railway.app'}/api/third-party/orders/${thirdPartyOrderId}/barcode`;
+      responseData.message = '訂單建立成功，條碼正在生成中，請使用 barcode_status_url 查詢條碼狀態';
+      responseData.retry_after = 10;
+      responseData.estimated_barcode_ready_time = new Date(Date.now() + 30000).toISOString();
+    }
 
     res.status(201).json({
       success: true,
-      data: {
-        order_id: thirdPartyOrderId,
-        client_order_id: client_order_id,
-        merchant_trade_no: merchantTradeNo,
-        store_type: store_type,
-        amount: numAmount,
-        
-        // 條碼相關 - 異步生成模式
-        barcode_status: 'pending', // pending, generated, expired
-        barcode: null, // 將透過PaymentInfoURL回調更新
-        barcode_url: null, // 將透過PaymentInfoURL回調更新
-        barcode_segments: {
-          barcode_1: null,
-          barcode_2: null,
-          barcode_3: null
-        },
-        
-        // 查詢條碼狀態的API端點
-        barcode_status_url: `${process.env.BASE_URL || 'https://corba3c-production.up.railway.app'}/api/third-party/orders/${thirdPartyOrderId}/barcode`,
-        
-        // 其他資訊
-        expire_date: ecpayResult.expireDate,
-        payment_params: ecpayResult.paymentParams,
-        customer_info_url: `${process.env.BASE_URL || 'https://corba3c-production.up.railway.app'}/customer-info/${thirdPartyOrderId}`,
-        
-        // 提示訊息
-        message: '訂單建立成功，條碼正在生成中，請使用 barcode_status_url 查詢條碼狀態',
-        
-        // 預估條碼生成時間
-        estimated_barcode_ready_time: new Date(Date.now() + 30000).toISOString() // 30秒後
-      }
+      data: responseData
     });
 
   } catch (error) {
@@ -439,76 +472,108 @@ router.post('/ecpay/callback', async (req, res) => {
  */
 router.post('/ecpay/payment-info', async (req, res) => {
   try {
-    console.log('收到 ECPay 付款資訊回調:', req.body);
+    console.log('收到 ECPay 付款資訊回調:', JSON.stringify(req.body, null, 2));
     
-    const { 
-      MerchantTradeNo,
-      TradeNo,
-      PaymentType,
-      TradeDate,
-      Barcode_1, // 第一段條碼
-      Barcode_2, // 第二段條碼  
-      Barcode_3, // 第三段條碼
-      ExpireDate,
-      PaymentNo
-    } = req.body;
-
-    // 記錄安全日誌
-    securityLog('info', 'ECPay條碼資訊回調', req, {
-      merchant_trade_no: MerchantTradeNo,
-      trade_no: TradeNo,
-      payment_type: PaymentType
-    });
+    const { MerchantTradeNo } = req.body;
 
     if (!MerchantTradeNo) {
       console.error('PaymentInfo回調缺少MerchantTradeNo');
       return res.send('0|缺少必要參數');
     }
 
-    // 查找對應的訂單
+    // 查找對應的訂單（使用更簡單的查詢）
     const order = await getAsync(`
       SELECT tpo.id, tpo.external_order_id, tpo.client_system, et.id as transaction_id
       FROM third_party_orders tpo
-      LEFT JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
-      WHERE et.merchant_trade_no = ? OR tpo.id IN (
-        SELECT third_party_order_id FROM ecpay_transactions WHERE merchant_trade_no = ?
-      )
-    `, [MerchantTradeNo, MerchantTradeNo]);
+      JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
+      WHERE et.merchant_trade_no = ?
+      LIMIT 1
+    `, [MerchantTradeNo]);
 
     if (!order) {
       console.error('找不到對應的訂單:', MerchantTradeNo);
       return res.send('0|找不到訂單');
     }
 
+    console.log('找到訂單:', order);
+
+    // 處理真實的ECPay BARCODE回調格式
+    const { 
+      TradeNo,
+      PaymentType,
+      TradeDate,
+      RtnCode,
+      RtnMsg,
+      BarcodeInfo, // 真實格式：包含Barcode1, Barcode2, Barcode3的物件
+      ExpireDate,
+      PaymentNo
+    } = req.body;
+
+    // 從BarcodeInfo中提取條碼段
+    let Barcode_1, Barcode_2, Barcode_3, finalExpireDate;
+    if (BarcodeInfo) {
+      console.log('使用BarcodeInfo格式:', BarcodeInfo);
+      Barcode_1 = BarcodeInfo.Barcode1;
+      Barcode_2 = BarcodeInfo.Barcode2; 
+      Barcode_3 = BarcodeInfo.Barcode3;
+      finalExpireDate = BarcodeInfo.ExpireDate || ExpireDate;
+    } else {
+      console.log('使用傳統格式');
+      // 兼容舊格式（如果還有的話）
+      Barcode_1 = req.body.Barcode_1;
+      Barcode_2 = req.body.Barcode_2;
+      Barcode_3 = req.body.Barcode_3;
+      finalExpireDate = ExpireDate;
+    }
+
+    console.log('提取的條碼數據:', { Barcode_1, Barcode_2, Barcode_3, finalExpireDate });
+
     // 處理條碼資訊
     if (PaymentType === 'BARCODE' && (Barcode_1 || Barcode_2 || Barcode_3)) {
-      // 生成完整條碼資訊
-      const barcodeInfo = generateBarcodeInfo(Barcode_1, Barcode_2, Barcode_3, PaymentNo, ExpireDate);
+      console.log('開始處理條碼資訊...');
       
-      if (!barcodeInfo) {
-        console.error('無法生成條碼資訊:', { Barcode_1, Barcode_2, Barcode_3 });
+      // 生成完整條碼
+      const segments = [Barcode_1, Barcode_2, Barcode_3].filter(Boolean);
+      if (segments.length === 0) {
+        console.error('沒有有效的條碼段');
         return res.send('0|條碼數據無效');
       }
 
-      const barcodeData = barcodeInfo;
-      const barcodeUrl = barcodeInfo.barcode_url;
+      const fullBarcode = segments.join('-');
+      const barcodeUrl = `https://payment.ecpay.com.tw/SP/CreateQRCode?qdata=${encodeURIComponent(fullBarcode)}`;
+      
+      console.log('生成的條碼:', fullBarcode);
+      console.log('條碼URL:', barcodeUrl);
+      
+      // 簡化的條碼數據結構
+      const barcodeData = {
+        barcode_1: Barcode_1 || '',
+        barcode_2: Barcode_2 || '',
+        barcode_3: Barcode_3 || '',
+        full_barcode: fullBarcode,
+        segments_count: segments.length,
+        expire_date: finalExpireDate,
+        barcode_url: barcodeUrl
+      };
+      
+      console.log('準備更新數據庫...');
       
       // 更新訂單條碼資訊
-      await runSQL(`
+      runSQL(`
         UPDATE third_party_orders 
         SET payment_code = ?, payment_url = ?, barcode_data = ?, barcode_status = 'generated', expire_date = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `, [
-        barcodeData.full_barcode,
+        fullBarcode,
         barcodeUrl, 
         JSON.stringify(barcodeData),
-        ExpireDate || null,
+        finalExpireDate || null,
         order.id
       ]);
 
       // 更新交易記錄
       if (order.transaction_id) {
-        await runSQL(`
+        runSQL(`
           UPDATE ecpay_transactions 
           SET trade_no = ?, payment_type = ?, barcode_info = ?, updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
@@ -523,15 +588,7 @@ router.post('/ecpay/payment-info', async (req, res) => {
       console.log('條碼資訊更新成功:', {
         order_id: order.id,
         merchant_trade_no: MerchantTradeNo,
-        barcode: barcodeData.full_barcode
-      });
-
-      // 記錄條碼生成事件
-      securityLog('info', '條碼資訊更新完成', req, {
-        order_id: order.id,
-        external_order_id: order.external_order_id,
-        client_system: order.client_system,
-        barcode_segments: `${Barcode_1}-${Barcode_2}-${Barcode_3}`
+        barcode: fullBarcode
       });
     }
 

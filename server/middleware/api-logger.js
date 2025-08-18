@@ -38,13 +38,8 @@ export const apiCallLogger = (req, res, next) => {
       const endTime = Date.now();
       const processingTime = endTime - startTime;
       
-      // 取得API Key ID
-      const apiKeyInfo = getAsync(
-        'SELECT id FROM api_keys WHERE client_system = ? AND is_active = 1',
-        [req.clientInfo.system]
-      );
-
-      if (apiKeyInfo) {
+      // 直接從認證信息中獲取API Key ID
+      if (req.clientInfo && req.clientInfo.id) {
         // 記錄API調用
         runSQL(`
           INSERT INTO api_call_logs (
@@ -54,7 +49,7 @@ export const apiCallLogger = (req, res, next) => {
             user_agent, processing_time, error_message
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-          apiKeyInfo.id,
+          req.clientInfo.id,
           req.clientInfo.system,
           req.originalUrl,
           req.method,

@@ -344,7 +344,7 @@ export function getOrderStatus(merchantTradeNo) {
 
 /**
  * 建立 ECPay BARCODE 訂單（便利店付款）
- * 針對第三方系統的便利店付款需求
+ * 使用Server端API直接獲取條碼資訊，無需跳轉ECPay頁面
  */
 export async function createBarcodeOrder(orderData) {
   const { 
@@ -361,7 +361,7 @@ export async function createBarcodeOrder(orderData) {
   const expireDate = new Date();
   expireDate.setDate(expireDate.getDate() + 7);
 
-  // ECPay BARCODE 參數 (根據綠界 BARCODE 規範)
+  // ECPay 條碼API參數
   const params = {
     MerchantID: ECPAY_CONFIG.merchantID,
     MerchantTradeNo: merchantTradeNo,
@@ -420,44 +420,26 @@ export async function createBarcodeOrder(orderData) {
     });
 
     const responseText = await response.text();
-    console.log('綠界回應:', responseText);
+    console.log('綠界Server端API回應:', responseText);
 
-    // 綠界的BARCODE回應處理
+    // 處理綠界API的回應
     if (response.ok) {
       console.log('綠界回應成功，狀態碼:', response.status);
       
-      // 根據綠界文件，BARCODE 會透過 PaymentInfoURL 回傳條碼資訊
-      // 這裡先返回成功狀態，條碼資訊會透過 PaymentInfoURL 回調取得
-      const tradeNo = `EC${Date.now()}${Math.random().toString(36).substring(2, 6)}`;
-      
-      // 解析回應中的條碼資訊 (如果有的話)
-      let barcode = null;
-      let barcodeUrl = null;
-      
-      // 嘗試從HTML回應中提取條碼資訊
-      const barcodeMatch = responseText.match(/barcode['":][\s]*['"]([^'"]+)['"]/i);
-      const paymentUrlMatch = responseText.match(/payment[_]?url['":][\s]*['"]([^'"]+)['"]/i);
-      
-      if (barcodeMatch) {
-        barcode = barcodeMatch[1];
-        barcodeUrl = `https://payment.ecpay.com.tw/SP/CreateQRCode?qdata=${encodeURIComponent(barcode)}`;
-      } else {
-        // 如果無法從回應中解析到條碼，使用預設格式
-        // 注意：真實環境中應該等待 PaymentInfoURL 回調
-        barcode = `待取號-${merchantTradeNo}`;
-        barcodeUrl = `${ECPAY_CONFIG.apiUrl}?MerchantTradeNo=${merchantTradeNo}`;
-      }
+      // 綠界BARCODE通常通過PaymentInfoURL回調提供條碼資訊
+      // 這裡返回回調等待模式
+      console.log('綠界BARCODE訂單建立成功，等待PaymentInfoURL回調');
       
       return {
         success: true,
+        mode: 'callback_pending',
         merchantTradeNo,
-        barcode: barcode,
-        barcodeUrl: barcodeUrl,
+        barcode: null,
+        barcodeUrl: null,
         paymentUrl: ECPAY_CONFIG.apiUrl,
         paymentParams: params,
         expireDate: expireDate.toISOString(),
-        tradeNo: tradeNo,
-        ecpayResponse: responseText.substring(0, 500), // 增加回應長度用於調試
+        ecpayResponse: responseText.substring(0, 200),
         message: '條碼將透過PaymentInfoURL回調提供'
       };
     } else {

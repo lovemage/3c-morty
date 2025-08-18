@@ -51,6 +51,7 @@ export const apiKeyAuth = async (req, res, next) => {
     }
 
     req.clientInfo = {
+      id: keyInfo.id,
       system: keyInfo.client_system,
       keyName: keyInfo.key_name,
       rateLimit: keyInfo.rate_limit
