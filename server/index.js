@@ -497,18 +497,25 @@ app.get('/test-barcode', (req, res) => {
                 clearInterval(pollInterval);
             }
             
-            console.log('開始輪詢訂單', orderId);
+            console.log('開始輪詢訂單 (使用CVS查詢)', orderId);
+            
+            let pollCount = 0;
+            const maxPolls = 24; // 最多輪詢2分鐘 (24次 * 5秒)
             
             pollInterval = setInterval(async () => {
                 try {
-                    const response = await fetch(\`/api/third-party/orders/\${orderId}/barcode\`, {
+                    pollCount++;
+                    console.log(\`輪詢第\${pollCount}次，檢查條碼狀態...\`);
+                    
+                    // 使用新的refresh端點，它會自動執行CVS查詢
+                    const response = await fetch(\`/api/third-party/orders/\${orderId}/barcode/refresh\`, {
                         headers: {
                             'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
                         }
                     });
                     
                     const result = await response.json();
-                    console.log('輪詢結果:', result);
+                    console.log('條碼查詢回應:', result);
                     
                     if (response.ok && result.success) {
                         // 檢查是否有條碼數據
@@ -519,20 +526,56 @@ app.get('/test-barcode', (req, res) => {
                             console.log('收到條碼數據，停止輪詢');
                             clearInterval(pollInterval);
                             showResult(result.data);
+                            return;
                         }
+                    }
+                    
+                    // 檢查是否達到最大輪詢次數
+                    if (pollCount >= maxPolls) {
+                        console.log('已達最大輪詢次數，停止輪詢');
+                        clearInterval(pollInterval);
+                        
+                        const resultSection = document.getElementById('barcodeResult');
+                        resultSection.innerHTML = \`
+                            <div class="status-warning">
+                                ⏰ 輪詢超時 - 已輪詢\${maxPolls}次
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <p>條碼資訊尚未從綠界系統生成。這可能是因為：</p>
+                                <ul style="text-align: left; margin: 10px 0;">
+                                    <li>綠界需要消費者實際訪問付款頁面才會生成條碼</li>
+                                    <li>系統正在處理中，請稍後再試</li>
+                                </ul>
+                                <button onclick="continuePolling(\${orderId})" style="margin-top: 15px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                                    🔄 繼續輪詢
+                                </button>
+                            </div>
+                        \`;
+                        resultSection.style.display = 'block';
                     }
                 } catch (error) {
                     console.error('輪詢錯誤:', error);
+                    if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        showError('輪詢失敗: ' + error.message);
+                    }
                 }
             }, 5000); // 每5秒檢查一次
-            
-            // 30秒後停止輪詢
-            setTimeout(() => {
-                if (pollInterval) {
-                    clearInterval(pollInterval);
-                    console.log('輪詢超時，停止檢查');
-                }
-            }, 30000);
+        }
+        
+        // 繼續輪詢功能
+        function continuePolling(orderId) {
+            console.log('用戶選擇繼續輪詢:', orderId);
+            const resultSection = document.getElementById('barcodeResult');
+            resultSection.innerHTML = \`
+                <div class="status-info">
+                    🔄 繼續查詢中...
+                </div>
+                <div style="margin-top: 15px;">
+                    <p>正在重新檢查條碼狀態...</p>
+                </div>
+            \`;
+            startPolling(orderId);
         }
         
         // 顯示載入中
@@ -1705,6 +1748,32 @@ app.get('/test-barcode-api/:orderId', async (req, res) => {
 </body>
 </html>
     `);
+  }
+});
+
+// 測試用API資料查看端點 - 使用CVS查詢功能 (不需要API Key)
+app.get('/test-barcode-api/:orderId/refresh', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // 使用測試API Key呼叫refresh端點
+    const apiUrl = `https://corba3c-production.up.railway.app/api/third-party/orders/${orderId}/barcode/refresh`;
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+      }
+    });
+    
+    const data = await response.json();
+    res.json(data);
+    
+  } catch (error) {
+    console.error('查詢條碼刷新失敗:', error);
+    res.status(500).json({
+      error: true,
+      message: '查詢失敗: ' + error.message
+    });
   }
 });
 
