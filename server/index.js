@@ -422,7 +422,7 @@ app.get('/test-barcode', (req, res) => {
         </div>
         
         <div style="text-align: center; margin-top: 40px;">
-            <a href="/test-ecpay" class="test-btn secondary">🔄 ECPay原始測試</a>
+            <a href="/merchant-demo" class="test-btn secondary">🏪 廠商API演示</a>
             <a href="/test-code39" class="test-btn secondary">📊 Code39條碼測試</a>
             <a href="/api/health" class="test-btn secondary">🏥 系統狀態</a>
         </div>
@@ -785,82 +785,293 @@ app.get('/test-barcode', (req, res) => {
 });
 
 // ECPay 測試表單選擇頁面
-app.get('/test-ecpay', (req, res) => {
+// 廠商模擬頁面 - 演示如何使用API
+app.get('/merchant-demo', (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ECPay 測試 - 選擇金額</title>
+    <title>廠商API使用演示</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .amount-btn { 
-            display: inline-block; 
-            background: #4CAF50; 
-            color: white; 
-            padding: 15px 25px; 
-            text-decoration: none; 
-            border-radius: 5px; 
-            margin: 10px; 
-            font-size: 18px;
-            transition: background 0.3s;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
         }
-        .amount-btn:hover { background: #45a049; }
-        h1 { text-align: center; color: #333; }
-        p { text-align: center; color: #666; margin: 20px 0; }
-        .custom-form { 
-            border: 2px dashed #ddd; 
-            padding: 20px; 
-            border-radius: 10px; 
-            margin-top: 30px;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
             text-align: center;
         }
-        input[type="number"] { 
-            width: 200px; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            margin: 0 10px;
-            font-size: 16px;
+        .content {
+            padding: 30px;
         }
-        .custom-btn {
-            background: #2196F3;
+        .demo-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #3498db;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .btn {
+            background: #28a745;
             color: white;
-            padding: 10px 20px;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
         }
-        .custom-btn:hover { background: #1976D2; }
+        .btn:hover {
+            background: #218838;
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result-box {
+            background: #e8f5e8;
+            border: 2px solid #28a745;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .error-box {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛒 ECPay 測試頁面</h1>
-        <p>選擇測試金額，系統會自動建立訂單並跳轉到ECPay收銀台</p>
-        
-        <div style="text-align: center;">
-            <a href="/generate-ecpay-form?amount=199" class="amount-btn">NT$ 199</a>
-            <a href="/generate-ecpay-form?amount=299" class="amount-btn">NT$ 299</a>
-            <a href="/generate-ecpay-form?amount=499" class="amount-btn">NT$ 499</a>
-            <a href="/generate-ecpay-form?amount=999" class="amount-btn">NT$ 999</a>
+        <div class="header">
+            <h1>🏪 廠商API使用演示</h1>
+            <p>模擬廠商網站如何使用我們的金流API</p>
         </div>
         
-        <div class="custom-form">
-            <h4>自訂金額</h4>
-            <form action="/generate-ecpay-form" method="GET" style="display: inline;">
-                <input type="number" name="amount" placeholder="輸入金額" min="1" max="6000" required>
-                <button type="submit" class="custom-btn">建立訂單</button>
-            </form>
+        <div class="content">
+            <div class="demo-section">
+                <h3>📝 訂單資訊</h3>
+                <div class="form-group">
+                    <label for="amount">付款金額 (NT$)</label>
+                    <input type="number" id="amount" min="1" max="6000" value="299" required>
+                </div>
+                <div class="form-group">
+                    <label for="orderType">訂單類型</label>
+                    <select id="orderType">
+                        <option value="product">商品購買</option>
+                        <option value="service">服務付費</option>
+                        <option value="donation">捐款</option>
+                        <option value="membership">會員費</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="customerEmail">顧客email (選填)</label>
+                    <input type="email" id="customerEmail" placeholder="customer@example.com">
+                </div>
+            </div>
+            
+            <div class="demo-section">
+                <h3>🚀 API 調用演示</h3>
+                <div class="info-box">
+                    <strong>服務流程：</strong><br>
+                    1. 廠商調用我們的API建立訂單<br>
+                    2. 獲得 barcode_page_url 跳轉網址<br>
+                    3. 將用戶導向此網址，用戶直接進入ECPay收銀台<br>
+                    4. 廠商無需處理任何ECPay技術細節
+                </div>
+                
+                <button onclick="callPaymentAPI()" class="btn" id="payBtn">💳 建立付款訂單</button>
+                
+                <div class="loading" id="loading">
+                    <div class="loading-spinner"></div>
+                    <p>正在調用API建立訂單...</p>
+                </div>
+                
+                <div class="result-box" id="resultBox">
+                    <h4>✅ API 調用成功</h4>
+                    <p><strong>訂單編號：</strong><span id="orderId"></span></p>
+                    <p><strong>付款網址：</strong><span id="paymentUrl"></span></p>
+                    <button onclick="redirectToPayment()" class="btn" style="margin-top: 15px;">
+                        🏪 前往ECPay收銀台付款
+                    </button>
+                </div>
+                
+                <div class="error-box" id="errorBox">
+                    <h4>❌ API 調用失敗</h4>
+                    <p id="errorMessage"></p>
+                </div>
+                
+                <div id="apiDetails" style="display: none;">
+                    <h4>📋 API 調用詳情</h4>
+                    <p><strong>請求URL：</strong></p>
+                    <div class="code-block" id="requestUrl"></div>
+                    <p><strong>請求內容：</strong></p>
+                    <div class="code-block" id="requestBody"></div>
+                    <p><strong>回應內容：</strong></p>
+                    <div class="code-block" id="responseBody"></div>
+                </div>
+            </div>
         </div>
-        
-        <p style="font-size: 14px; color: #999;">
-            ⚠️ 這會建立真實的ECPay訂單，請勿使用真實付款
-        </p>
     </div>
+
+    <script>
+        let currentPaymentUrl = '';
+        
+        async function callPaymentAPI() {
+            const amount = document.getElementById('amount').value;
+            const orderType = document.getElementById('orderType').value;
+            const customerEmail = document.getElementById('customerEmail').value;
+            
+            if (!amount || amount < 1 || amount > 6000) {
+                alert('請輸入有效的金額 (1-6000)');
+                return;
+            }
+            
+            // 生成唯一訂單編號
+            const timestamp = Date.now();
+            const clientOrderId = \`DEMO_\${orderType.toUpperCase()}_\${timestamp}\`;
+            
+            // 顯示載入狀態
+            document.getElementById('payBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultBox').style.display = 'none';
+            document.getElementById('errorBox').style.display = 'none';
+            document.getElementById('apiDetails').style.display = 'none';
+            
+            const apiUrl = 'https://corba3c-production.up.railway.app/api/third-party/barcode/create';
+            const requestData = {
+                amount: parseInt(amount),
+                client_order_id: clientOrderId,
+                callback_url: customerEmail ? \`mailto:\${customerEmail}\` : 'https://webhook.site/demo'
+            };
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                
+                // 更新API詳情
+                document.getElementById('requestUrl').textContent = \`POST \${apiUrl}\`;
+                document.getElementById('requestBody').textContent = JSON.stringify(requestData, null, 2);
+                document.getElementById('responseBody').textContent = JSON.stringify(result, null, 2);
+                document.getElementById('apiDetails').style.display = 'block';
+                
+                if (response.ok && result.success) {
+                    // 成功回應
+                    document.getElementById('orderId').textContent = result.data.client_order_id;
+                    document.getElementById('paymentUrl').textContent = result.data.barcode_page_url;
+                    currentPaymentUrl = result.data.barcode_page_url;
+                    document.getElementById('resultBox').style.display = 'block';
+                } else {
+                    throw new Error(result.message || '未知錯誤');
+                }
+                
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = error.message;
+                document.getElementById('errorBox').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('payBtn').disabled = false;
+            }
+        }
+        
+        function redirectToPayment() {
+            if (currentPaymentUrl) {
+                window.location.href = currentPaymentUrl;
+            }
+        }
+        
+        // 頁面載入時顯示歡迎訊息
+        window.addEventListener('load', function() {
+            console.log('廠商API演示頁面載入完成');
+        });
+    </script>
 </body>
 </html>
   `);
@@ -1777,74 +1988,6 @@ app.get('/test-barcode-api/:orderId/refresh', async (req, res) => {
   }
 });
 
-// ECPay 表單生成端點 (伺服器端處理)
-app.get('/generate-ecpay-form', async (req, res) => {
-  const amount = parseInt(req.query.amount) || 299;
-  
-  if (amount < 1 || amount > 6000) {
-    return res.status(400).send('金額必須在 1-6000 之間');
-  }
-  
-  try {
-    const timestamp = Date.now();
-    const randomId = Math.random().toString(36).substring(2, 10);
-    const clientOrderId = `server_test_${timestamp}_${randomId}`;
-    
-    // 生成更唯一的商家交易編號
-    const uniqueTimestamp = Date.now().toString();
-    const uniqueRandom = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const merchantTradeNo = `TEST${uniqueTimestamp.slice(-10)}${uniqueRandom}`;
-    
-    // 建立訂單 (直接呼叫API) - 使用絕對URL確保正確
-    const apiUrl = 'https://corba3c-production.up.railway.app/api/third-party/barcode/create';
-    console.log('呼叫API:', apiUrl);
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
-      },
-      body: JSON.stringify({
-        amount: amount,
-        client_order_id: clientOrderId,
-        callback_url: 'https://webhook.site/test'
-      })
-    });
-    
-    console.log('API回應狀態:', response.status);
-    const orderResult = await response.json();
-    console.log('API回應內容:', JSON.stringify(orderResult, null, 2));
-    
-    if (!response.ok || !orderResult.success) {
-      const errorMsg = orderResult.message || `API呼叫失敗: ${response.status}`;
-      console.error('API錯誤:', errorMsg);
-      throw new Error(errorMsg);
-    }
-    
-    // 新版本API直接返回barcode_page_url，直接重定向
-    if (orderResult.data.barcode_page_url) {
-      console.log('重定向到:', orderResult.data.barcode_page_url);
-      return res.redirect(302, orderResult.data.barcode_page_url);
-    }
-    
-    // 回退：如果沒有barcode_page_url，顯示錯誤
-    throw new Error('API未返回有效的支付頁面網址');
-    
-  } catch (error) {
-    console.error('生成ECPay表單失敗:', error);
-    res.status(500).send(`
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head><meta charset="UTF-8"><title>錯誤</title></head>
-<body style="font-family: Arial; text-align: center; padding: 50px;">
-    <h1 style="color: red;">❌ 建立訂單失敗</h1>
-    <p>${error.message}</p>
-    <a href="/test-ecpay" style="color: blue;">返回測試頁面</a>
-</body>
-</html>
-    `);
-  }
-});
 
 /**
  * ECPay 重定向端點 - 專為第三方廠商使用
