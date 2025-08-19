@@ -210,6 +210,132 @@ app.get('/test-barcode', (req, res) => {
             margin: 10px 0;
             word-break: break-all;
         }
+        .loading-section {
+            text-align: center;
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .barcode-result {
+            background: #fff;
+            border: 2px solid #28a745;
+            border-radius: 15px;
+            margin: 20px 0;
+            padding: 30px;
+        }
+        .barcode-header {
+            background: #28a745;
+            color: white;
+            padding: 20px;
+            margin: -30px -30px 30px -30px;
+            border-radius: 13px 13px 0 0;
+            text-align: center;
+        }
+        .barcode-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #212529;
+            font-family: 'Courier New', monospace;
+        }
+        .barcode-segments {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .barcode-segment {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            border: 2px dashed #2196f3;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background: #218838;
+        }
+        .barcode-display {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .status-pending {
+            color: #856404;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .status-success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .status-error {
+            color: #721c24;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .refresh-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
     </style>
 </head>
 <body>
@@ -232,22 +358,32 @@ app.get('/test-barcode', (req, res) => {
         </div>
         
         <div class="section">
-            <h3>🚀 快速測試</h3>
-            <p>選擇測試金額，系統會自動建立訂單並顯示條碼網頁：</p>
-            <div style="text-align: center;">
-                <a href="/create-test-barcode?amount=100" class="test-btn">NT$ 100</a>
-                <a href="/create-test-barcode?amount=299" class="test-btn">NT$ 299</a>
-                <a href="/create-test-barcode?amount=500" class="test-btn">NT$ 500</a>
-                <a href="/create-test-barcode?amount=1000" class="test-btn">NT$ 1000</a>
+            <h3>🚀 條碼測試</h3>
+            <p>輸入金額後，條碼將直接在下方顯示：</p>
+            
+            <div class="test-form" id="testForm">
+                <div style="text-align: center; margin: 20px 0;">
+                    <button onclick="createBarcode(100)" class="test-btn">NT$ 100</button>
+                    <button onclick="createBarcode(299)" class="test-btn">NT$ 299</button>
+                    <button onclick="createBarcode(500)" class="test-btn">NT$ 500</button>
+                    <button onclick="createBarcode(1000)" class="test-btn">NT$ 1000</button>
+                </div>
+                
+                <div class="custom-form" style="text-align: center;">
+                    <h4>💰 自訂金額</h4>
+                    <input type="number" id="customAmount" placeholder="輸入金額 (1-6000)" min="1" max="6000" style="padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button onclick="createCustomBarcode()" class="test-btn">建立條碼</button>
+                </div>
             </div>
             
-            <div class="custom-form">
-                <h4>💰 自訂金額測試</h4>
-                <form action="/create-test-barcode" method="GET" style="text-align: center;">
-                    <input type="number" name="amount" placeholder="輸入金額 (1-6000)" min="1" max="6000" required>
-                    <button type="submit" class="test-btn">建立條碼訂單</button>
-                </form>
+            <!-- 載入中的顯示 -->
+            <div class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>正在建立條碼訂單...</p>
             </div>
+            
+            <!-- 條碼結果顯示區域 -->
+            <div class="barcode-result" id="barcodeResult" style="display: none;"></div>
         </div>
         
         <div class="section">
@@ -291,6 +427,315 @@ app.get('/test-barcode', (req, res) => {
             <a href="/api/health" class="test-btn secondary">🏥 系統狀態</a>
         </div>
     </div>
+    
+    <script>
+        let currentOrderId = null;
+        let pollInterval = null;
+        
+        // 建立條碼訂單
+        async function createBarcode(amount) {
+            showLoading(true);
+            hideResult();
+            
+            try {
+                const timestamp = Date.now();
+                const randomId = Math.random().toString(36).substring(2, 10);
+                const clientOrderId = \`barcode_test_\${timestamp}_\${randomId}\`;
+                
+                const response = await fetch('/api/third-party/barcode/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+                    },
+                    body: JSON.stringify({
+                        amount: amount,
+                        client_order_id: clientOrderId,
+                        callback_url: 'https://webhook.site/test-barcode'
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('API回應:', result);
+                
+                if (response.ok && result.success) {
+                    currentOrderId = result.data.order_id;
+                    showResult(result.data);
+                    
+                    // 如果條碼還沒有生成，開始輪詢
+                    if (!result.data.barcode && (!result.data.barcode_segments || 
+                        (!result.data.barcode_segments.barcode_1 && !result.data.barcode_segments.barcode_2 && !result.data.barcode_segments.barcode_3))) {
+                        startPolling(currentOrderId);
+                    }
+                } else {
+                    showError('API呼叫失敗: ' + (result.message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('建立條碼失敗:', error);
+                showError('建立條碼失敗: ' + error.message);
+            }
+            
+            showLoading(false);
+        }
+        
+        // 自訂金額建立條碼
+        function createCustomBarcode() {
+            const amountInput = document.getElementById('customAmount');
+            const amount = parseInt(amountInput.value);
+            
+            if (!amount || amount < 1 || amount > 6000) {
+                alert('請輸入1-6000之間的金額');
+                return;
+            }
+            
+            createBarcode(amount);
+        }
+        
+        // 輪詢檢查條碼狀態
+        async function startPolling(orderId) {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            
+            console.log('開始輪詢訂單', orderId);
+            
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(\`/api/third-party/orders/\${orderId}/barcode\`, {
+                        headers: {
+                            'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    console.log('輪詢結果:', result);
+                    
+                    if (response.ok && result.success) {
+                        // 檢查是否有條碼數據
+                        if (result.data.barcode || 
+                            (result.data.barcode_segments && 
+                             (result.data.barcode_segments.barcode_1 || result.data.barcode_segments.barcode_2 || result.data.barcode_segments.barcode_3))) {
+                            
+                            console.log('收到條碼數據，停止輪詢');
+                            clearInterval(pollInterval);
+                            showResult(result.data);
+                        }
+                    }
+                } catch (error) {
+                    console.error('輪詢錯誤:', error);
+                }
+            }, 5000); // 每5秒檢查一次
+            
+            // 30秒後停止輪詢
+            setTimeout(() => {
+                if (pollInterval) {
+                    clearInterval(pollInterval);
+                    console.log('輪詢超時，停止檢查');
+                }
+            }, 30000);
+        }
+        
+        // 顯示載入中
+        function showLoading(show) {
+            const loadingSection = document.getElementById('loadingSection');
+            loadingSection.style.display = show ? 'block' : 'none';
+        }
+        
+        // 隱藏結果
+        function hideResult() {
+            const resultSection = document.getElementById('barcodeResult');
+            resultSection.style.display = 'none';
+        }
+        
+        // 顯示結果
+        function showResult(data) {
+            const resultSection = document.getElementById('barcodeResult');
+            
+            // 檢查條碼狀態
+            const hasBarcode = data.barcode || 
+                (data.barcode_segments && 
+                 (data.barcode_segments.barcode_1 || data.barcode_segments.barcode_2 || data.barcode_segments.barcode_3));
+            
+            let barcodeContent = '';
+            
+            if (hasBarcode) {
+                // 有條碼數據
+                let segments = [];
+                if (data.barcode_segments) {
+                    if (data.barcode_segments.barcode_1) segments.push(data.barcode_segments.barcode_1);
+                    if (data.barcode_segments.barcode_2) segments.push(data.barcode_segments.barcode_2);
+                    if (data.barcode_segments.barcode_3) segments.push(data.barcode_segments.barcode_3);
+                }
+                
+                barcodeContent = \`
+                    <div class="status-success">
+                        ✅ 條碼已生成！請至便利商店付款
+                    </div>
+                    
+                    \${segments.length > 0 ? \`
+                        <div class="barcode-segments">
+                            <h4>📊 條碼段資訊</h4>
+                            \${segments.map((segment, index) => \`
+                                <div class="barcode-segment">
+                                    <span>第 \${index + 1} 段: \${segment}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('\${segment}')">複製</button>
+                                </div>
+                            \`).join('')}
+                            \${data.barcode ? \`
+                                <div class="barcode-segment" style="border-color: #28a745;">
+                                    <span>完整條碼: \${data.barcode}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('\${data.barcode}')">複製</button>
+                                </div>
+                            \` : ''}
+                        </div>
+                    \` : (data.barcode ? \`
+                        <div class="barcode-segments">
+                            <div class="barcode-segment" style="border-color: #28a745;">
+                                <span>條碼: \${data.barcode}</span>
+                                <button class="copy-btn" onclick="copyToClipboard('\${data.barcode}')">複製</button>
+                            </div>
+                        </div>
+                    \` : '')}
+                \`;
+            } else {
+                // 沒有條碼數據
+                barcodeContent = \`
+                    <div class="status-pending">
+                        ⏳ 正在等待綠界回傳條碼數據...
+                        <br>這通常需要幾秒到幾分鐘時間，系統會自動更新
+                        <br><button class="refresh-btn" onclick="manualRefresh()">手動重新整理</button>
+                    </div>
+                \`;
+            }
+            
+            resultSection.innerHTML = \`
+                <div class="barcode-header">
+                    <h2>🏪 便利商店條碼付款</h2>
+                    <p>訂單編號: \${data.external_order_id}</p>
+                </div>
+                
+                <div class="barcode-info">
+                    <div class="info-item">
+                        <div class="info-label">訂單ID</div>
+                        <div class="info-value">\${data.order_id}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">付款金額</div>
+                        <div class="info-value">NT$ \${data.amount}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">條碼狀態</div>
+                        <div class="info-value">\${data.barcode_status}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">過期時間</div>
+                        <div class="info-value">\${new Date(data.expire_date).toLocaleString('zh-TW')}</div>
+                    </div>
+                </div>
+                
+                \${barcodeContent}
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="\${data.barcode_page_url}" target="_blank" class="test-btn">🏪 完整條碼頁面</a>
+                    <button onclick="resetTest()" class="test-btn secondary">🔄 重新測試</button>
+                </div>
+            \`;
+            
+            resultSection.style.display = 'block';
+        }
+        
+        // 顯示錯誤
+        function showError(message) {
+            const resultSection = document.getElementById('barcodeResult');
+            resultSection.innerHTML = \`
+                <div class="barcode-header" style="background: #dc3545;">
+                    <h2>❌ 建立失敗</h2>
+                </div>
+                <div class="status-error">
+                    \${message}
+                    <br><button class="refresh-btn" onclick="resetTest()">重新嘗試</button>
+                </div>
+            \`;
+            resultSection.style.display = 'block';
+        }
+        
+        // 手動重新整理
+        async function manualRefresh() {
+            if (currentOrderId) {
+                showLoading(true);
+                try {
+                    const response = await fetch(\`/api/third-party/orders/\${currentOrderId}/barcode\`, {
+                        headers: {
+                            'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        showResult(result.data);
+                        
+                        // 如果還是沒有條碼，繼續輪詢
+                        const hasBarcode = result.data.barcode || 
+                            (result.data.barcode_segments && 
+                             (result.data.barcode_segments.barcode_1 || result.data.barcode_segments.barcode_2 || result.data.barcode_segments.barcode_3));
+                        
+                        if (!hasBarcode) {
+                            startPolling(currentOrderId);
+                        }
+                    }
+                } catch (error) {
+                    console.error('重新整理失敗:', error);
+                }
+                showLoading(false);
+            }
+        }
+        
+        // 重置測試
+        function resetTest() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            currentOrderId = null;
+            hideResult();
+            showLoading(false);
+        }
+        
+        // 複製到剪貼板
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function() {
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = '已複製!';
+                    btn.style.background = '#20c997';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '#28a745';
+                    }, 1500);
+                });
+            } else {
+                // 降級方案
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert('已複製到剪貼板');
+                } catch (err) {
+                    alert('複製失敗，請手動選取文字');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        // Enter 鍵支援
+        document.getElementById('customAmount').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createCustomBarcode();
+            }
+        });
+    </script>
 </body>
 </html>
   `);
