@@ -1929,6 +1929,221 @@ app.get('/generate-ecpay-form', async (req, res) => {
   }
 });
 
+/**
+ * ECPay 重定向端點 - 專為第三方廠商使用
+ * GET /ecpay-redirect/:orderId
+ * 直接將用戶重定向到ECPay收銀台，無需額外表單操作
+ */
+app.get('/ecpay-redirect/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    if (!orderId || isNaN(orderId)) {
+      return res.status(400).send('無效的訂單ID');
+    }
+    
+    console.log('ECPay重定向請求，訂單ID:', orderId);
+    
+    // 查詢訂單資訊
+    const { getAsync } = await import('./database/database-adapter.js');
+    const order = await getAsync(`
+      SELECT tpo.id, tpo.external_order_id, tpo.amount, tpo.product_info, tpo.client_system,
+             et.merchant_trade_no, et.raw_response
+      FROM third_party_orders tpo
+      LEFT JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
+      WHERE tpo.id = ?
+    `, [orderId]);
+    
+    if (!order) {
+      return res.status(404).send('找不到訂單');
+    }
+    
+    if (!order.raw_response) {
+      return res.status(400).send('訂單未包含ECPay參數');
+    }
+    
+    // 解析ECPay參數
+    let ecpayParams;
+    try {
+      const rawResponse = JSON.parse(order.raw_response);
+      ecpayParams = rawResponse.paymentParams || rawResponse.paymentForm?.params;
+      
+      if (!ecpayParams) {
+        throw new Error('找不到ECPay參數');
+      }
+    } catch (error) {
+      console.error('解析ECPay參數失敗:', error);
+      return res.status(500).send('訂單參數錯誤');
+    }
+    
+    // 生成隱藏欄位
+    let hiddenInputs = '';
+    Object.entries(ecpayParams).forEach(([key, value]) => {
+      hiddenInputs += `<input type="hidden" name="${key}" value="${value}">`;
+    });
+    
+    // 生成自動提交的HTML表單
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跳轉至ECPay收銀台</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .redirect-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .order-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .manual-submit {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+        }
+        .submit-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .submit-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-container">
+        <h1>🏪 正在跳轉至ECPay收銀台</h1>
+        
+        <div class="order-info">
+            <div class="info-row">
+                <span>訂單編號:</span>
+                <span>${order.external_order_id}</span>
+            </div>
+            <div class="info-row">
+                <span>付款金額:</span>
+                <span>NT$ ${order.amount}</span>
+            </div>
+            <div class="info-row">
+                <span>商品資訊:</span>
+                <span>${order.product_info}</span>
+            </div>
+        </div>
+        
+        <div class="loading-spinner"></div>
+        <p>系統正在自動跳轉，請稍候...</p>
+        
+        <!-- 自動提交表單 -->
+        <form id="ecpayForm" method="POST" action="https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5" style="display: none;">
+            ${hiddenInputs}
+        </form>
+        
+        <!-- 手動提交備案 -->
+        <div id="manualSubmit" class="manual-submit" style="display: none;">
+            <h3>⚠️ 自動跳轉失敗</h3>
+            <p>請點擊下方按鈕手動前往ECPay收銀台</p>
+            <button type="button" class="submit-btn" onclick="submitForm()">前往ECPay付款</button>
+        </div>
+    </div>
+    
+    <script>
+        let autoSubmitted = false;
+        
+        function submitForm() {
+            if (!autoSubmitted) {
+                autoSubmitted = true;
+                console.log('提交ECPay表單');
+                document.getElementById('ecpayForm').submit();
+            }
+        }
+        
+        // 頁面載入後自動提交
+        window.addEventListener('load', function() {
+            console.log('頁面載入完成，準備跳轉至ECPay');
+            
+            // 延遲2秒後自動提交，給用戶看到跳轉訊息的時間
+            setTimeout(function() {
+                submitForm();
+            }, 2000);
+            
+            // 10秒後顯示手動提交選項
+            setTimeout(function() {
+                if (!autoSubmitted) {
+                    document.getElementById('manualSubmit').style.display = 'block';
+                }
+            }, 10000);
+        });
+    </script>
+</body>
+</html>
+    `);
+    
+  } catch (error) {
+    console.error('ECPay重定向失敗:', error);
+    res.status(500).send(`
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head><meta charset="UTF-8"><title>重定向錯誤</title></head>
+<body style="font-family: Arial; text-align: center; padding: 50px;">
+    <h1 style="color: red;">❌ 跳轉失敗</h1>
+    <p>無法跳轉至ECPay收銀台</p>
+    <p style="color: #666; font-size: 14px;">錯誤詳情: ${error.message}</p>
+    <a href="/test-ecpay" style="color: blue;">返回測試頁面</a>
+</body>
+</html>
+    `);
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);

@@ -174,26 +174,20 @@ router.post('/barcode/create',
       store_type: store_type,
       amount: numAmount,
       expire_date: ecpayResult.expireDate,
-      customer_info_url: `${baseUrl}/customer-info/${thirdPartyOrderId}`,
-      barcode_page_url: `${baseUrl}/api/third-party/orders/${thirdPartyOrderId}/barcode/page`
+      customer_info_url: `${baseUrl}/customer-info/${thirdPartyOrderId}`
     };
 
     if (ecpayResult.mode === 'ecpay_redirect') {
-      // ECPay跳轉模式：返回支付表單資訊
+      // ECPay跳轉模式：廠商獲得直接跳轉到ECPay收銀台的網址
       responseData.barcode_status = 'generated';
       responseData.payment_method = 'ecpay_redirect';
-      responseData.ecpay_form = {
-        action: ecpayResult.paymentForm.action,
-        method: ecpayResult.paymentForm.method,
-        params: ecpayResult.paymentForm.params
-      };
-      responseData.message = '訂單建立成功，請使用ecpay_form建立POST表單跳轉到ECPay頁面進行條碼付款';
-      responseData.integration_instructions = [
-        '使用ecpay_form.action作為表單的action URL',
-        '使用ecpay_form.method (POST)作為表單方法',
-        '將ecpay_form.params中的所有參數作為隱藏欄位添加到表單',
-        '提交表單將跳轉到ECPay條碼頁面',
-        '用戶完成付款後，系統會收到付款通知'
+      responseData.barcode_page_url = `${baseUrl}/ecpay-redirect/${thirdPartyOrderId}`;
+      responseData.message = '訂單建立成功，廠商只需將用戶導向 barcode_page_url 即可進入ECPay收銀台';
+      responseData.usage_instructions = [
+        '將用戶導向 barcode_page_url 網址',
+        '用戶將直接進入ECPay收銀台頁面',
+        '用戶完成條碼付款後系統會自動處理回調',
+        '廠商無需處理任何ECPay技術細節'
       ];
     } else if (ecpayResult.mode === 'server_direct') {
       // Server端直接模式：立即返回條碼資訊

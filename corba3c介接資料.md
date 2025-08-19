@@ -1,7 +1,7 @@
 # 第三方金流API - 廠商接入文件
 
 ## 🎯 服務說明
-廠商發出請求提供訂單編號和金額，我們直接返回ECPay收銀台頁面，廠商無需處理任何金流技術細節。
+廠商發出請求提供訂單編號和金額，我們直接返回ECPay收銀台跳轉頁面網址，廠商只需將用戶導向此網址，用戶就能直接進入ECPay收銀台完成付款。廠商無需處理任何ECPay技術細節。
 
 ## 🚀 API使用
 
@@ -37,7 +37,7 @@ X-API-KEY: 您的API Key
 }
 ```
 
-**重要**: 廠商只需要調用API並引導用戶到返回的網址，我們處理所有ECPay整合。
+**重要**: 廠商只需調用API並將用戶導向返回的 `barcode_page_url`，用戶將直接進入ECPay收銀台完成付款。
 
 ### 查詢訂單狀態
 
@@ -53,9 +53,10 @@ X-API-KEY: 您的API Key
 ## 💳 使用流程
 
 1. 廠商調用我們的API，提供訂單編號和金額
-2. 廠商引導用戶前往我們返回的付款頁面網址
-3. 用戶直接進入ECPay收銀台完成條碼付款
-4. 我們處理所有ECPay技術整合，廠商無需了解ECPay細節
+2. 我們返回 `barcode_page_url` 跳轉頁面網址
+3. 廠商將用戶導向此網址（使用 `window.location.href` 或服務端 302 重定向）
+4. 用戶自動跳轉到ECPay收銀台完成條碼付款
+5. 我們處理所有ECPay技術整合，廠商無需了解ECPay細節
 
 ## ✅ 服務
 
@@ -100,7 +101,7 @@ async function createOrderAndRedirect() {
     const data = await response.json();
     
     if (data.success) {
-      // 直接跳轉到我們的付款頁面
+      // 直接跳轉到ECPay收銀台頁面
       window.location.href = data.data.barcode_page_url;
     }
   } catch (error) {
@@ -136,7 +137,7 @@ $result = file_get_contents($url, false, $context);
 $response = json_decode($result, true);
 
 if ($response['success']) {
-    // 直接跳轉到我們的付款頁面
+    // 直接跳轉到ECPay收銀台頁面
     $paymentUrl = $response['data']['barcode_page_url'];
     header('Location: ' . $paymentUrl);
     exit;
