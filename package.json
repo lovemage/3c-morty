@@ -11,7 +11,10 @@
     "build": "tsc && vite build",
     "postbuild": "echo 'Build completed successfully'",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:railway": "node railway-migrate-db.mjs",
+    "health:check": "node health-check.mjs",
+    "deploy:railway": "npm run health:check && npm run migrate:railway && npm start"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

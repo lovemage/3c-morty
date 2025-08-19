@@ -287,6 +287,7 @@ app.get('/test-barcode', (req, res) => {
         
         <div style="text-align: center; margin-top: 40px;">
             <a href="/test-ecpay" class="test-btn secondary">🔄 ECPay原始測試</a>
+            <a href="/test-code39" class="test-btn secondary">📊 Code39條碼測試</a>
             <a href="/api/health" class="test-btn secondary">🏥 系統狀態</a>
         </div>
     </div>
@@ -372,6 +373,382 @@ app.get('/test-ecpay', (req, res) => {
             ⚠️ 這會建立真實的ECPay訂單，請勿使用真實付款
         </p>
     </div>
+</body>
+</html>
+  `);
+});
+
+// Code39條碼生成測試頁面
+app.get('/test-code39', (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code39條碼生成測試</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft JhengHei', sans-serif; 
+            max-width: 900px; 
+            margin: 30px auto; 
+            padding: 20px; 
+            background: #f8f9fa;
+            line-height: 1.6;
+        }
+        .container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #28a745;
+            padding-bottom: 20px;
+        }
+        h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 25px;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            border-color: #28a745;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+        .btn { 
+            background: #28a745; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        .btn:hover { 
+            background: #218838; 
+            transform: translateY(-1px);
+        }
+        .btn.secondary {
+            background: #6c757d;
+        }
+        .btn.secondary:hover {
+            background: #545b62;
+        }
+        .result-section {
+            margin: 30px 0;
+            padding: 25px;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            background: white;
+            min-height: 150px;
+        }
+        .barcode-display {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #ffc107;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            border-bottom: 3px solid #28a745;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Code39條碼生成測試</h1>
+            <p>測試本地Code39條碼生成功能</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('single')">單段條碼</button>
+            <button class="tab" onclick="switchTab('multi')">多段條碼</button>
+            <button class="tab" onclick="switchTab('examples')">範例測試</button>
+        </div>
+        
+        <!-- 單段條碼測試 -->
+        <div id="singleTab" class="tab-content active">
+            <div class="test-section">
+                <h3>🔤 單段條碼生成</h3>
+                <div class="input-group">
+                    <label for="singleText">條碼文字 (支援數字、大寫字母、-、.、空格等):</label>
+                    <input type="text" id="singleText" placeholder="例如: HELLO123" value="HELLO123">
+                </div>
+                <div class="input-group">
+                    <label for="singleWidth">寬度:</label>
+                    <input type="number" id="singleWidth" value="350" min="200" max="600">
+                </div>
+                <div class="input-group">
+                    <label for="singleHeight">高度:</label>
+                    <input type="number" id="singleHeight" value="100" min="60" max="200">
+                </div>
+                <button class="btn" onclick="generateSingleBarcode()">生成條碼</button>
+                <button class="btn secondary" onclick="clearResults()">清除結果</button>
+            </div>
+        </div>
+        
+        <!-- 多段條碼測試 -->
+        <div id="multiTab" class="tab-content">
+            <div class="test-section">
+                <h3>📋 多段條碼生成 (模擬綠界三段式)</h3>
+                <div class="input-group">
+                    <label for="segment1">第一段:</label>
+                    <input type="text" id="segment1" placeholder="例如: 12345" value="12345">
+                </div>
+                <div class="input-group">
+                    <label for="segment2">第二段:</label>
+                    <input type="text" id="segment2" placeholder="例如: 67890" value="67890">
+                </div>
+                <div class="input-group">
+                    <label for="segment3">第三段:</label>
+                    <input type="text" id="segment3" placeholder="例如: ABCDE" value="ABCDE">
+                </div>
+                <button class="btn" onclick="generateMultiBarcode()">生成多段條碼</button>
+                <button class="btn secondary" onclick="clearResults()">清除結果</button>
+            </div>
+        </div>
+        
+        <!-- 範例測試 -->
+        <div id="examplesTab" class="tab-content">
+            <div class="test-section">
+                <h3>🎯 快速範例測試</h3>
+                <p>點擊以下按鈕測試不同的條碼格式:</p>
+                <button class="btn" onclick="testExample('TEST123')">測試: TEST123</button>
+                <button class="btn" onclick="testExample('STORE-001')">測試: STORE-001</button>
+                <button class="btn" onclick="testExample('PAY 2023')">測試: PAY 2023</button>
+                <button class="btn" onclick="testMultiExample(['123456', '789012', 'ABC'])">測試三段式</button>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h4>💡 Code39格式說明</h4>
+            <ul>
+                <li><strong>支援字符:</strong> 數字(0-9)、大寫字母(A-Z)、特殊符號(-、.、空格、$、/、+、%)</li>
+                <li><strong>條碼格式:</strong> 自動添加起始和結束符號(*)</li>
+                <li><strong>用途:</strong> 超商條碼掃描、庫存管理、物流追蹤</li>
+                <li><strong>建議:</strong> 條碼文字不要超過20個字符以確保可讀性</li>
+            </ul>
+        </div>
+        
+        <div class="result-section" id="resultSection">
+            <h3>📊 生成結果</h3>
+            <div id="barcodeResult">
+                <p style="text-align: center; color: #6c757d;">請在上方選擇測試類型並生成條碼</p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/test-barcode" class="btn secondary">🏪 條碼付款測試</a>
+            <a href="/api/health" class="btn secondary">🏥 系統狀態</a>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tabName) {
+            // 隱藏所有tab內容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有tab的active狀態
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 顯示選中的tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        async function generateSingleBarcode() {
+            const text = document.getElementById('singleText').value;
+            const width = document.getElementById('singleWidth').value;
+            const height = document.getElementById('singleHeight').value;
+            
+            if (!text.trim()) {
+                alert('請輸入條碼文字');
+                return;
+            }
+            
+            try {
+                showLoading();
+                const response = await fetch(\`/api/third-party/barcode/generate/\${encodeURIComponent(text)}?width=\${width}&height=\${height}&format=json\`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayResult(result.data.svg, \`單段條碼: \${result.data.text}\`, result.data.warnings);
+                } else {
+                    displayError(result.message, result.details);
+                }
+            } catch (error) {
+                displayError('生成失敗', error.message);
+            }
+        }
+        
+        async function generateMultiBarcode() {
+            const segments = [
+                document.getElementById('segment1').value,
+                document.getElementById('segment2').value,
+                document.getElementById('segment3').value
+            ].filter(s => s.trim());
+            
+            if (segments.length === 0) {
+                alert('請至少輸入一段條碼文字');
+                return;
+            }
+            
+            try {
+                showLoading();
+                const response = await fetch('/api/third-party/barcode/generate-multi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ segments })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayResult(result.data.svg, \`多段條碼 (\${result.data.segmentCount}段)\`, result.data.warnings);
+                } else {
+                    displayError(result.message, result.details);
+                }
+            } catch (error) {
+                displayError('生成失敗', error.message);
+            }
+        }
+        
+        function testExample(text) {
+            document.getElementById('singleText').value = text;
+            switchTab('single');
+            document.querySelector('.tab[onclick="switchTab(\'single\')"]').classList.add('active');
+            generateSingleBarcode();
+        }
+        
+        function testMultiExample(segments) {
+            document.getElementById('segment1').value = segments[0] || '';
+            document.getElementById('segment2').value = segments[1] || '';
+            document.getElementById('segment3').value = segments[2] || '';
+            switchTab('multi');
+            document.querySelector('.tab[onclick="switchTab(\'multi\')"]').classList.add('active');
+            generateMultiBarcode();
+        }
+        
+        function showLoading() {
+            document.getElementById('barcodeResult').innerHTML = '<p style="text-align: center;">⏳ 正在生成條碼...</p>';
+        }
+        
+        function displayResult(svg, title, warnings = []) {
+            let html = \`<h4>\${title}</h4><div class="barcode-display">\${svg}</div>\`;
+            
+            if (warnings.length > 0) {
+                html += \`<div class="warning"><strong>⚠️ 警告:</strong><ul>\${warnings.map(w => \`<li>\${w}</li>\`).join('')}</ul></div>\`;
+            }
+            
+            html += \`<div style="text-align: center; margin-top: 15px;">
+                <button class="btn secondary" onclick="downloadCurrentBarcode()">下載SVG</button>
+            </div>\`;
+            
+            document.getElementById('barcodeResult').innerHTML = html;
+        }
+        
+        function displayError(message, details) {
+            let html = \`<div style="color: red; text-align: center;">
+                <h4>❌ \${message}</h4>\`;
+            
+            if (details) {
+                if (Array.isArray(details)) {
+                    html += \`<ul>\${details.map(d => \`<li>\${d}</li>\`).join('')}</ul>\`;
+                } else {
+                    html += \`<p>\${details}</p>\`;
+                }
+            }
+            
+            html += '</div>';
+            document.getElementById('barcodeResult').innerHTML = html;
+        }
+        
+        function clearResults() {
+            document.getElementById('barcodeResult').innerHTML = '<p style="text-align: center; color: #6c757d;">請在上方選擇測試類型並生成條碼</p>';
+        }
+        
+        function downloadCurrentBarcode() {
+            const svg = document.querySelector('#barcodeResult svg');
+            if (svg) {
+                const svgContent = new XMLSerializer().serializeToString(svg);
+                const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'code39-barcode.svg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+    </script>
 </body>
 </html>
   `);
@@ -826,20 +1203,38 @@ if (process.env.NODE_ENV === 'production') {
 const startServer = async () => {
   try {
     console.log('🔧 初始化數據庫...');
+    console.log('🌐 環境變數檢查:');
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   PORT: ${PORT}`);
+    console.log(`   DATABASE_URL: ${process.env.DATABASE_URL ? '✅ 已設定' : '❌ 未設定'}`);
+    console.log(`   BASE_URL: ${process.env.BASE_URL || '未設定'}`);
+    
     await initializeDatabase();
     console.log('✅ 數據庫初始化完成');
     
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log('🚀 Corba 3C Shop API Server 正在運行');
       console.log(`📍 Server: http://0.0.0.0:${PORT}`);
       console.log(`🏥 Health: http://0.0.0.0:${PORT}/api/health`);
+      console.log(`🧪 Barcode Test: http://0.0.0.0:${PORT}/test-barcode`);
       console.log(`🛍️ 環境: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 CORS Origin: ${process.env.NODE_ENV === 'production' ? (process.env.FRONTEND_URL || 'all origins') : 'development origins'}`);
       console.log(`📁 Dist directory exists: ${fs.existsSync(path.join(__dirname, '../dist'))}`);
       console.log(`📄 Index.html exists: ${fs.existsSync(path.join(__dirname, '../dist/index.html'))}`);
     });
+    
+    // 處理服務器錯誤
+    server.on('error', (error) => {
+      console.error('❌ 服務器錯誤:', error);
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ 端口 ${PORT} 已被使用`);
+      }
+      process.exit(1);
+    });
+    
   } catch (error) {
     console.error('❌ 服務器啟動失敗:', error);
+    console.error('錯誤詳情:', error.stack);
     process.exit(1);
   }
 };

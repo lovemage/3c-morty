@@ -9,6 +9,11 @@ import {
   securityLog 
 } from '../middleware/security.js';
 import { apiCallLogger } from '../middleware/api-logger.js';
+import { 
+  generateCode39SVG, 
+  generateMultiSegmentCode39SVG, 
+  validateCode39Text 
+} from '../utils/code39-generator.js';
 
 const router = express.Router();
 
@@ -771,6 +776,12 @@ function generateBarcodePageHtml(data) {
       if (barcodeSegments.barcode_1 || barcodeSegments.barcode_2 || barcodeSegments.barcode_3) {
         const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
         
+        // 生成本地Code39條碼
+        const baseUrl = process.env.BASE_URL || 'https://corba3c-production.up.railway.app';
+        const localBarcodeUrl = segments.length > 0 
+          ? `${baseUrl}/api/third-party/barcode/generate-multi`
+          : null;
+        
         barcodeContent = `
           <div class="barcode-section">
             <h3>🛒 便利商店條碼付款</h3>
@@ -778,7 +789,7 @@ function generateBarcodePageHtml(data) {
             ${barcodeUrl ? `
               <div class="barcode-image">
                 <img src="${barcodeUrl}" alt="付款條碼" style="max-width: 100%; height: auto; border: 1px solid #ddd; padding: 10px; background: white;">
-                <p class="image-note">掃描此條碼或告知店員以下號碼</p>
+                <p class="image-note">綠界官方條碼圖片</p>
               </div>
             ` : ''}
             
@@ -800,6 +811,19 @@ function generateBarcodePageHtml(data) {
                 <button onclick="copyToClipboard('${barcode || segments.join('-')}')" class="copy-btn">複製</button>
               </div>
             </div>
+            
+            ${segments.length > 0 ? `
+              <div class="local-barcode-section">
+                <h4>📊 本地生成條碼</h4>
+                <div class="local-barcode-container" id="localBarcodeContainer">
+                  <div class="loading-barcode">
+                    <div class="loading-spinner"></div>
+                    <p>正在生成條碼...</p>
+                  </div>
+                </div>
+                <p class="barcode-note">此為本地生成的Code39格式條碼，供離線使用</p>
+              </div>
+            ` : ''}
             
             <div class="usage-instructions">
               <h4>💡 使用說明</h4>
@@ -1107,6 +1131,33 @@ function generateBarcodePageHtml(data) {
             100% { transform: rotate(360deg); }
         }
         
+        .local-barcode-section {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .local-barcode-container {
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        .loading-barcode {
+            text-align: center;
+        }
+        
+        .barcode-note {
+            font-size: 14px;
+            color: #6c757d;
+            text-align: center;
+            margin: 10px 0 0 0;
+        }
+        
         .footer {
             background: #f8f9fa;
             padding: 20px;
@@ -1251,6 +1302,79 @@ function generateBarcodePageHtml(data) {
                 location.reload();
             }, 15000); // 15秒後自動重新整理
         }
+        
+        // 生成本地條碼
+        async function generateLocalBarcode() {
+            const container = document.getElementById('localBarcodeContainer');
+            if (!container) return;
+            
+            // 取得條碼段
+            const segments = [];
+            ${segments.map((segment, index) => `segments.push('${segment}');`).join('')}
+            
+            if (segments.length === 0) return;
+            
+            try {
+                const response = await fetch('/api/third-party/barcode/generate-multi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        segments: segments,
+                        options: {
+                            width: 320,
+                            height: 60,
+                            showText: true,
+                            showSegmentLabels: true,
+                            segmentSpacing: 10
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        container.innerHTML = result.data.svg;
+                        
+                        // 添加下載按鈕
+                        const downloadBtn = document.createElement('button');
+                        downloadBtn.textContent = '下載條碼';
+                        downloadBtn.className = 'copy-btn';
+                        downloadBtn.style.marginTop = '10px';
+                        downloadBtn.onclick = () => downloadSVG(result.data.svg, 'barcode.svg');
+                        container.appendChild(downloadBtn);
+                    } else {
+                        throw new Error(result.message || '生成失敗');
+                    }
+                } else {
+                    throw new Error('API請求失敗');
+                }
+            } catch (error) {
+                console.error('本地條碼生成失敗:', error);
+                container.innerHTML = '<p style="color: red;">本地條碼生成失敗：' + error.message + '</p>';
+            }
+        }
+        
+        // 下載SVG文件
+        function downloadSVG(svgContent, filename) {
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 頁面載入完成後生成本地條碼
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('localBarcodeContainer')) {
+                setTimeout(generateLocalBarcode, 1000); // 延遲1秒後生成
+            }
+        });
     </script>
 </body>
 </html>
@@ -1326,6 +1450,141 @@ function generateErrorPage(title, message) {
 </html>
   `;
 }
+
+/**
+ * GET /api/third-party/barcode/generate/:text
+ * 生成Code39條碼SVG (公開端點，無需API Key)
+ */
+router.get('/barcode/generate/:text', async (req, res) => {
+  try {
+    const { text } = req.params;
+    const { 
+      width = 300, 
+      height = 80, 
+      format = 'svg',
+      showText = 'true',
+      style = 'default'
+    } = req.query;
+
+    // 驗證文字
+    const validation = validateCode39Text(text);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        error: true,
+        message: '無效的條碼文字',
+        details: validation.errors,
+        warnings: validation.warnings
+      });
+    }
+
+    // 生成條碼選項
+    const options = {
+      width: parseInt(width),
+      height: parseInt(height),
+      showText: showText === 'true',
+      barColor: style === 'dark' ? '#000000' : '#000000',
+      backgroundColor: style === 'dark' ? '#f8f9fa' : '#ffffff',
+      textColor: style === 'dark' ? '#000000' : '#000000'
+    };
+
+    // 生成SVG條碼
+    const svgCode = generateCode39SVG(validation.cleanedText, options);
+
+    // 設置適當的Content-Type
+    if (format === 'svg') {
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.send(svgCode);
+    } else {
+      res.json({
+        success: true,
+        data: {
+          text: validation.cleanedText,
+          svg: svgCode,
+          warnings: validation.warnings
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('條碼生成失敗:', error);
+    res.status(500).json({
+      error: true,
+      message: '條碼生成失敗',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/third-party/barcode/generate-multi
+ * 生成多段Code39條碼SVG (公開端點，無需API Key)
+ */
+router.post('/barcode/generate-multi', async (req, res) => {
+  try {
+    const { segments, options = {} } = req.body;
+
+    if (!Array.isArray(segments) || segments.length === 0) {
+      return res.status(400).json({
+        error: true,
+        message: '必須提供條碼段陣列'
+      });
+    }
+
+    if (segments.length > 3) {
+      return res.status(400).json({
+        error: true,
+        message: '最多支援3段條碼'
+      });
+    }
+
+    // 驗證所有段
+    const validatedSegments = [];
+    const allWarnings = [];
+    
+    for (let i = 0; i < segments.length; i++) {
+      const validation = validateCode39Text(segments[i]);
+      if (!validation.isValid) {
+        return res.status(400).json({
+          error: true,
+          message: `第${i + 1}段條碼無效`,
+          details: validation.errors
+        });
+      }
+      validatedSegments.push(validation.cleanedText);
+      allWarnings.push(...validation.warnings);
+    }
+
+    // 生成多段條碼
+    const barcodeOptions = {
+      width: 350,
+      height: 70,
+      showText: true,
+      showSegmentLabels: true,
+      segmentSpacing: 15,
+      ...options
+    };
+
+    const svgCode = generateMultiSegmentCode39SVG(validatedSegments, barcodeOptions);
+
+    res.json({
+      success: true,
+      data: {
+        segments: validatedSegments,
+        svg: svgCode,
+        warnings: allWarnings,
+        segmentCount: validatedSegments.length
+      }
+    });
+
+  } catch (error) {
+    console.error('多段條碼生成失敗:', error);
+    res.status(500).json({
+      error: true,
+      message: '多段條碼生成失敗',
+      details: error.message
+    });
+  }
+});
 
 /**
  * 生成完整的條碼資訊物件
