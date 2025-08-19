@@ -1,7 +1,7 @@
 # 第三方金流API - 廠商接入文件
 
 ## 🎯 服務說明
-本API協助廠商建立條碼付款訂單，提供ECPay金流表單參數，廠商需要引導用戶到ECPay頁面完成條碼生成和付款。
+本API協助廠商向ECPay發出條碼付款訂單請求，ECPay會返回HTML頁面供用戶點選取得條碼。我們只負責訂單建立，實際條碼生成由ECPay處理。
 
 ## 🚀 快速開始
 
@@ -39,46 +39,38 @@
 }
 ```
 
-**重要**: 條碼需要用戶訪問ECPay頁面後才會生成，我們無法直接提供條碼資料。
+**重要**: 我們無法取得條碼資料，只能建立訂單並提供ECPay表單參數。
 
 ### 查詢訂單狀態
 
 **端點**: `GET /api/third-party/orders/{order_id}/barcode`
 
-**回應**:
-```json
-{
-  "success": true,
-  "data": {
-    "order_id": 60,
-    "client_order_id": "ORDER-001", 
-    "amount": 199,
-    "order_status": "pending",
-    "barcode_page_url": "https://corba3c-production.up.railway.app/api/third-party/orders/60/barcode/page",
-    "expire_date": "2025-08-26T07:14:09.699Z"
-  }
-}
-```
+查詢我們系統中的訂單狀態，無法取得ECPay的條碼資料。
 
-## 💳 整合方式
+## 💳 使用流程
 
-使用ECPay表單將用戶導向金流頁面：
+1. 廠商調用我們的API建立訂單
+2. 使用回傳的`ecpay_form`參數建立表單
+3. 用戶提交表單跳轉到ECPay頁面
+4. 用戶在ECPay頁面點選取得條碼
+5. 用戶至便利商店完成付款
 
 ```html
 <form method="POST" action="{{ecpay_form.action}}">
   <input type="hidden" name="MerchantID" value="{{params.MerchantID}}">
   <input type="hidden" name="MerchantTradeNo" value="{{params.MerchantTradeNo}}">
   <input type="hidden" name="CheckMacValue" value="{{params.CheckMacValue}}">
-  <!-- 其他所有params參數... -->
+  <!-- 添加所有params中的參數 -->
   <button type="submit">前往付款</button>
 </form>
 ```
 
-用戶點擊後會跳轉到ECPay，ECPay會生成條碼供用戶至便利商店付款。
+## 🔔 限制說明
 
-## 🔔 付款通知
-
-用戶完成付款後會收到通知，可使用查詢API確認付款狀態。
+- 我們無法直接產生條碼資料
+- 無法取得ECPay的條碼資訊  
+- 只能協助建立訂單和提供表單參數
+- 付款狀態需透過ECPay回調或輪詢確認
 
 ## 🧪 測試
 
