@@ -85,7 +85,7 @@ X-API-KEY: 您的API Key
 
 ## 🧪 測試
 
-測試頁面：https://corba3c-production.up.railway.app/test-barcode
+測試頁面：https://corba3c-production.up.railway.app/test-ecpay
 
 ### 使用curl測試
 ```bash
