@@ -3,11 +3,17 @@
 ## 🎯 服務說明
 本API協助廠商向ECPay發出條碼付款訂單請求，ECPay會返回HTML頁面供用戶點選取得條碼。我們只負責訂單建立，實際條碼生成由ECPay處理。
 
-## 🚀 快速開始
+## 🚀 API使用
 
 ### 創建付款訂單
 
-**端點**: `POST /api/third-party/barcode/create`
+**完整網址**: `POST https://corba3c-production.up.railway.app/api/third-party/barcode/create`
+
+**Headers**:
+```
+Content-Type: application/json
+X-API-KEY: 您的API Key
+```
 
 **請求**:
 ```json
@@ -39,11 +45,16 @@
 }
 ```
 
-**重要**: 我們無法取得條碼資料，只能建立訂單並提供ECPay表單參數。
+**重要**: 目前無法取得條碼資料，只能建立訂單並提供ECPay表單參數。
 
 ### 查詢訂單狀態
 
-**端點**: `GET /api/third-party/orders/{order_id}/barcode`
+**完整網址**: `GET https://corba3c-production.up.railway.app/api/third-party/orders/{order_id}/barcode`
+
+**Headers**:
+```
+X-API-KEY: 您的API Key
+```
 
 查詢我們系統中的訂單狀態，無法取得ECPay的條碼資料。
 
@@ -75,3 +86,14 @@
 ## 🧪 測試
 
 測試頁面：https://corba3c-production.up.railway.app/test-barcode
+
+### 使用curl測試
+```bash
+curl -X POST https://corba3c-production.up.railway.app/api/third-party/barcode/create \
+  -H "Content-Type: application/json" \
+  -H "X-API-KEY: 您的API Key" \
+  -d '{
+    "amount": 299,
+    "client_order_id": "TEST-001"
+  }'
+```
