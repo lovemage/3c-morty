@@ -1,7 +1,7 @@
 # 第三方金流API - 廠商接入文件
 
 ## 🎯 服務說明
-本API協助廠商向Corba3c發出條碼付款訂單請求，Corba3c會返回HTML頁面供用戶點選取得條碼。我們只負責訂單建立，實際條碼生成由ECPay處理。
+廠商只需提供訂單編號和金額，我們處理所有金流技術細節，返回付款頁面網址供用戶使用。
 
 ## 🚀 API使用
 
@@ -28,24 +28,16 @@ X-API-KEY: 您的API Key
 {
   "success": true,
   "data": {
-    "order_id": 61,
-    "merchant_trade_no": "TPA881036289OR061",
+    "order_id": 68,
+    "client_order_id": "ORDER-001",
     "amount": 299,
     "expire_date": "2025-08-26T07:21:43.628Z",
-    "ecpay_form": {
-      "action": "https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5",
-      "method": "POST", 
-      "params": {
-        "MerchantID": "3466445",
-        "MerchantTradeNo": "TPA881036289OR061",
-        "CheckMacValue": "E39823A21C4A78B522F5F37CF93C8963C563A236DE6DE814547EA07E4BE62D8D"
-      }
-    }
+    "barcode_page_url": "https://corba3c-production.up.railway.app/api/third-party/orders/68/barcode/page"
   }
 }
 ```
 
-**重要**: 目前無法取得條碼資料，只能建立訂單並提供ECPay表單參數。
+**重要**: 廠商取得 `barcode_page_url` 後，直接引導用戶前往此網址即可完成付款。
 
 ### 查詢訂單狀態
 
@@ -60,21 +52,11 @@ X-API-KEY: 您的API Key
 
 ## 💳 使用流程
 
-1. 調用我們的API建立訂單
-2. 使用回傳的`ecpay_form`參數建立表單
-3. 用戶提交表單跳轉到ECPay頁面
-4. 用戶在ECPay頁面點選取得條碼
-5. 用戶至便利商店完成付款
-
-```html
-<form method="POST" action="{{ecpay_form.action}}">
-  <input type="hidden" name="MerchantID" value="{{params.MerchantID}}">
-  <input type="hidden" name="MerchantTradeNo" value="{{params.MerchantTradeNo}}">
-  <input type="hidden" name="CheckMacValue" value="{{params.CheckMacValue}}">
-  <!-- 添加所有params中的參數 -->
-  <button type="submit">前往付款</button>
-</form>
-```
+1. 廠商調用我們的API，提供訂單編號和金額
+2. 我們返回 `barcode_page_url` 付款頁面網址
+3. 廠商引導用戶前往此網址
+4. 我們的頁面處理所有金流流程
+5. 用戶完成條碼付款
 
 ## 🔔 限制說明
 
@@ -100,11 +82,11 @@ curl -X POST https://corba3c-production.up.railway.app/api/third-party/barcode/c
 
 ## 📋 API使用範例
 
-### JavaScript範例 (完整流程)
+### JavaScript範例
 ```javascript
 async function createOrderAndRedirect() {
   try {
-    // 步驟1: 調用API創建訂單
+    // 調用API創建訂單
     const response = await fetch('https://corba3c-production.up.railway.app/api/third-party/barcode/create', {
       method: 'POST',
       headers: {
@@ -120,22 +102,8 @@ async function createOrderAndRedirect() {
     const data = await response.json();
     
     if (data.success) {
-      // 步驟2: 使用回傳的ecpay_form建立表單並跳轉
-      const form = document.createElement('form');
-      form.method = data.data.ecpay_form.method;
-      form.action = data.data.ecpay_form.action;
-      
-      // 添加所有參數
-      Object.entries(data.data.ecpay_form.params).forEach(([key, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
-      });
-      
-      document.body.appendChild(form);
-      form.submit(); // 自動跳轉到ECPay
+      // 直接跳轉到我們的付款頁面
+      window.location.href = data.data.barcode_page_url;
     }
   } catch (error) {
     console.error('API調用失敗:', error);
@@ -143,10 +111,10 @@ async function createOrderAndRedirect() {
 }
 ```
 
-### PHP範例 (完整流程)
+### PHP範例
 ```php
 <?php
-// 步驟1: 調用API創建訂單
+// 調用API創建訂單
 $url = 'https://corba3c-production.up.railway.app/api/third-party/barcode/create';
 
 $data = [
@@ -170,18 +138,10 @@ $result = file_get_contents($url, false, $context);
 $response = json_decode($result, true);
 
 if ($response['success']) {
-    // 步驟2: 生成ECPay跳轉表單
-    $ecpayForm = $response['data']['ecpay_form'];
-    
-    echo '<form id="ecpayForm" method="' . $ecpayForm['method'] . '" action="' . $ecpayForm['action'] . '">';
-    foreach ($ecpayForm['params'] as $name => $value) {
-        echo '<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($value) . '">';
-    }
-    echo '<button type="submit">前往付款</button>';
-    echo '</form>';
-    
-    // 自動提交表單 (可選)
-    echo '<script>document.getElementById("ecpayForm").submit();</script>';
+    // 直接跳轉到我們的付款頁面
+    $paymentUrl = $response['data']['barcode_page_url'];
+    header('Location: ' . $paymentUrl);
+    exit;
 }
 ?>
 ```
