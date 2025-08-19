@@ -712,14 +712,6 @@ router.get('/orders/:orderId/barcode/page', async (req, res) => {
     const isExpired = order.expire_date && new Date(order.expire_date) < new Date();
     const currentStatus = isExpired ? 'expired' : (order.barcode_status || 'pending');
 
-    // Debug: Log the barcode segments data
-    console.log('Barcode segments debug:', {
-      orderId: order.id,
-      barcodeStatus: currentStatus,
-      barcodeSegments: barcodeSegments,
-      barcode: order.payment_code
-    });
-
     // 生成條碼網頁HTML
     const barcodePageHtml = generateBarcodePageHtml({
       orderId: order.id,
@@ -753,12 +745,6 @@ router.get('/orders/:orderId/barcode/page', async (req, res) => {
  * 生成條碼展示網頁HTML
  */
 function generateBarcodePageHtml(data) {
-  console.log('generateBarcodePageHtml called with data:', {
-    orderId: data.orderId,
-    barcodeStatus: data.barcodeStatus,
-    barcodeSegments: data.barcodeSegments
-  });
-
   const {
     orderId,
     externalOrderId,
