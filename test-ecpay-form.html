@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>測試ECPay表單跳轉</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .form-container { max-width: 600px; margin: 0 auto; }
+        input[type="hidden"] { display: none; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>測試ECPay條碼付款跳轉</h1>
+        
+        <div class="info">
+            <h3>測試資訊</h3>
+            <p>訂單ID: 65</p>
+            <p>金額: NT$50</p>
+            <p>商品: 3C商品一組</p>
+        </div>
+        
+        <p>點擊下方按鈕將會跳轉到ECPay收銀台</p>
+        
+        <form method="POST" action="https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5">
+            <input type="hidden" name="MerchantID" value="3466445">
+            <input type="hidden" name="MerchantTradeNo" value="TPA88907937C9J065">
+            <input type="hidden" name="MerchantTradeDate" value="2025/08/19 07:35:07">
+            <input type="hidden" name="PaymentType" value="aio">
+            <input type="hidden" name="TotalAmount" value="50">
+            <input type="hidden" name="TradeDesc" value="7ELEVEN便利店條碼付款">
+            <input type="hidden" name="ItemName" value="3C商品一組 - NT$50">
+            <input type="hidden" name="ReturnURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/callback">
+            <input type="hidden" name="ChoosePayment" value="BARCODE">
+            <input type="hidden" name="EncryptType" value="1">
+            <input type="hidden" name="StoreExpireDate" value="7">
+            <input type="hidden" name="PaymentInfoURL" value="https://corba3c-production.up.railway.app/api/third-party/ecpay/payment-info">
+            <input type="hidden" name="Desc_1" value="7-ELEVEN">
+            <input type="hidden" name="CheckMacValue" value="13B063BAB67B97A8872C581C07EC4F44262D6F37EA218C79215B0753AAE11433">
+            
+            <button type="submit">前往ECPay付款 (測試跳轉)</button>
+        </form>
+        
+        <div class="info">
+            <h3>說明</h3>
+            <p>這個表單使用了我們API返回的真實ECPay參數，點擊後會跳轉到ECPay正式環境的收銀台。</p>
+            <p>在ECPay頁面可以選擇條碼付款，系統會生成真實的便利商店條碼。</p>
+        </div>
+    </div>
+</body>
+</html>
