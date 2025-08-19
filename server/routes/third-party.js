@@ -773,14 +773,25 @@ function generateBarcodePageHtml(data) {
       statusClass = 'success';
       statusMessage = '條碼已生成，請至便利商店付款';
       
-      if (barcodeSegments.barcode_1 || barcodeSegments.barcode_2 || barcodeSegments.barcode_3) {
-        const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
-        
-        // 生成本地Code39條碼
-        const baseUrl = process.env.BASE_URL || 'https://corba3c-production.up.railway.app';
-        const localBarcodeUrl = segments.length > 0 
-          ? `${baseUrl}/api/third-party/barcode/generate-multi`
-          : null;
+      // 處理條碼段 - 檢查是否有有效的條碼數據
+      const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
+      const hasValidSegments = segments.length > 0;
+      
+      // 如果沒有條碼段但有完整條碼，嘗試解析
+      if (!hasValidSegments && barcode) {
+        const parsedSegments = barcode.split('-').filter(Boolean);
+        if (parsedSegments.length > 0) {
+          segments.push(...parsedSegments);
+        }
+      }
+      
+      // 生成本地Code39條碼
+      const baseUrl = process.env.BASE_URL || 'https://corba3c-production.up.railway.app';
+      const localBarcodeUrl = segments.length > 0 
+        ? `${baseUrl}/api/third-party/barcode/generate-multi`
+        : null;
+
+      if (hasValidSegments || barcode) {
         
         barcodeContent = `
           <div class="barcode-section">
@@ -793,24 +804,34 @@ function generateBarcodePageHtml(data) {
               </div>
             ` : ''}
             
-            <div class="barcode-segments">
-              <h4>條碼號碼 (三段式)</h4>
-              ${segments.map((segment, index) => `
-                <div class="segment">
-                  <label>第 ${index + 1} 段:</label>
-                  <span class="barcode-number">${segment}</span>
-                  <button onclick="copyToClipboard('${segment}')" class="copy-btn">複製</button>
-                </div>
-              `).join('')}
-            </div>
-            
-            <div class="barcode-full">
-              <h4>完整條碼</h4>
-              <div class="full-barcode-display">
-                <span class="barcode-number">${barcode || segments.join('-')}</span>
-                <button onclick="copyToClipboard('${barcode || segments.join('-')}')" class="copy-btn">複製</button>
+            ${segments.length > 0 ? `
+              <div class="barcode-segments">
+                <h4>條碼號碼 (${segments.length}段式)</h4>
+                ${segments.map((segment, index) => `
+                  <div class="segment">
+                    <label>第 ${index + 1} 段:</label>
+                    <span class="barcode-number">${segment}</span>
+                    <button onclick="copyToClipboard('${segment}')" class="copy-btn">複製</button>
+                  </div>
+                `).join('')}
               </div>
-            </div>
+            ` : ''}
+            
+            ${(barcode || segments.length > 0) ? `
+              <div class="barcode-full">
+                <h4>完整條碼</h4>
+                <div class="full-barcode-display">
+                  <span class="barcode-number">${barcode || segments.join('-')}</span>
+                  <button onclick="copyToClipboard('${barcode || segments.join('-')}')" class="copy-btn">複製</button>
+                </div>
+              </div>
+            ` : `
+              <div class="no-barcode-data">
+                <h4>⏳ 等待條碼數據</h4>
+                <p>系統正在向綠界取得條碼資訊，請稍後重新整理頁面</p>
+                <button onclick="location.reload()" class="refresh-btn">重新整理</button>
+              </div>
+            `}
             
             ${segments.length > 0 ? `
               <div class="local-barcode-section">
@@ -836,12 +857,26 @@ function generateBarcodePageHtml(data) {
           </div>
         `;
       } else {
+        // 條碼狀態為generated但沒有條碼數據
         barcodeContent = `
           <div class="barcode-section">
-            <div class="no-barcode">
-              <h3>⏳ 條碼生成中</h3>
-              <p>條碼正在生成，請稍後重新整理頁面</p>
+            <h3>🛒 便利商店條碼付款</h3>
+            
+            <div class="no-barcode-data">
+              <h4>⏳ 等待條碼數據</h4>
+              <p>訂單已建立，正在等待綠界回傳條碼資訊</p>
+              <p>這通常需要幾秒鐘時間，請稍後重新整理頁面</p>
               <button onclick="location.reload()" class="refresh-btn">重新整理</button>
+            </div>
+            
+            <div class="usage-instructions">
+              <h4>💡 使用說明</h4>
+              <ul>
+                <li>系統已向綠界發送條碼請求</li>
+                <li>條碼數據通常在5-30秒內到達</li>
+                <li>請稍後重新整理頁面查看條碼</li>
+                <li>如果長時間未顯示，請聯繫客服</li>
+              </ul>
             </div>
           </div>
         `;
@@ -1310,9 +1345,15 @@ function generateBarcodePageHtml(data) {
             
             // 取得條碼段
             const segments = [];
-            ${segments.map((segment, index) => `segments.push('${segment}');`).join('')}
+            ${(() => {
+              const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
+              return segments.map((segment) => `segments.push('${segment}');`).join('\n            ');
+            })()}
             
-            if (segments.length === 0) return;
+            if (segments.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center;">等待條碼數據...</p>';
+                return;
+            }
             
             try {
                 const response = await fetch('/api/third-party/barcode/generate-multi', {
