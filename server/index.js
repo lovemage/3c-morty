@@ -1821,97 +1821,14 @@ app.get('/generate-ecpay-form', async (req, res) => {
       throw new Error(errorMsg);
     }
     
-    // 生成純HTML表單頁面 (無JavaScript)
-    const ecpayForm = orderResult.data.ecpay_form;
-    let hiddenInputs = '';
+    // 新版本API直接返回barcode_page_url，直接重定向
+    if (orderResult.data.barcode_page_url) {
+      console.log('重定向到:', orderResult.data.barcode_page_url);
+      return res.redirect(302, orderResult.data.barcode_page_url);
+    }
     
-    Object.entries(ecpayForm.params).forEach(([key, value]) => {
-      hiddenInputs += `<input type="hidden" name="${key}" value="${value}">`;
-    });
-    
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跳轉到ECPay收銀台</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            padding: 50px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .container {
-            background: white;
-            color: #333;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: inline-block;
-            min-width: 400px;
-        }
-        .btn { 
-            background: #FF5722; 
-            color: white; 
-            padding: 20px 40px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 20px; 
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn:hover { 
-            background: #E64A19; 
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        .info { 
-            background: #e8f5e8; 
-            padding: 20px; 
-            border-radius: 8px; 
-            margin: 20px 0;
-            border-left: 5px solid #4CAF50;
-        }
-        .warning {
-            background: #fff3cd;
-            color: #856404;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 5px solid #ffc107;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 準備跳轉到ECPay</h1>
-        
-        <div class="info">
-            <h3>📋 訂單資訊</h3>
-            <p><strong>金額：</strong>NT$ ${amount}</p>
-            <p><strong>商品：</strong>伺服器測試商品</p>
-            <p><strong>付款方式：</strong>7-ELEVEN條碼付款</p>
-        </div>
-        
-        <div class="warning">
-            <strong>⚠️ 注意：</strong>這會跳轉到真實的ECPay頁面，請勿進行實際付款
-        </div>
-        
-        <form method="${ecpayForm.method}" action="${ecpayForm.action}">
-            ${hiddenInputs}
-            <button type="submit" class="btn">💳 跳轉到 ECPay 收銀台</button>
-        </form>
-        
-        <p style="margin-top: 30px; color: #666; font-size: 14px;">
-            點擊上方按鈕將跳轉到ECPay官方收銀台頁面
-        </p>
-    </div>
-</body>
-</html>
-    `);
+    // 回退：如果沒有barcode_page_url，顯示錯誤
+    throw new Error('API未返回有效的支付頁面網址');
     
   } catch (error) {
     console.error('生成ECPay表單失敗:', error);
