@@ -159,6 +159,7 @@ router.post('/barcode/create',
     ]);
 
     // 根據ECPay回應模式返回不同的結果
+    const baseUrl = process.env.BASE_URL || 'https://corba3c-production.up.railway.app';
     const responseData = {
       order_id: thirdPartyOrderId,
       client_order_id: client_order_id,
@@ -167,7 +168,8 @@ router.post('/barcode/create',
       store_type: store_type,
       amount: numAmount,
       expire_date: ecpayResult.expireDate,
-      customer_info_url: `${process.env.BASE_URL || 'https://corba3c-production.up.railway.app'}/customer-info/${thirdPartyOrderId}`
+      customer_info_url: `${baseUrl}/customer-info/${thirdPartyOrderId}`,
+      barcode_page_url: `${baseUrl}/api/third-party/orders/${thirdPartyOrderId}/barcode/page`
     };
 
     if (ecpayResult.mode === 'ecpay_redirect') {
@@ -340,6 +342,8 @@ router.get('/orders/:orderId/barcode', apiKeyAuth, apiCallLogger, async (req, re
       `, [orderId]);
     }
 
+    const baseUrl = process.env.BASE_URL || 'https://corba3c-production.up.railway.app';
+    
     res.json({
       success: true,
       data: {
@@ -354,6 +358,10 @@ router.get('/orders/:orderId/barcode', apiKeyAuth, apiCallLogger, async (req, re
         barcode: order.payment_code, // 完整條碼
         barcode_url: order.payment_url, // 條碼圖片URL
         barcode_segments: barcodeSegments, // 三段式條碼
+        
+        // 條碼網頁URL (廠商可直接使用或嵌入)
+        barcode_page_url: `${baseUrl}/api/third-party/orders/${order.id}/barcode/page`,
+        barcode_iframe_url: `${baseUrl}/api/third-party/orders/${order.id}/barcode/page?format=iframe`,
         
         // 時間資訊
         expire_date: order.expire_date,
@@ -379,7 +387,8 @@ router.get('/orders/:orderId/barcode', apiKeyAuth, apiCallLogger, async (req, re
           usage_instructions: [
             '請至便利商店櫃台出示此條碼',
             '條碼有效期限至 ' + (order.expire_date ? new Date(order.expire_date).toLocaleString('zh-TW') : '未知'),
-            '付款完成後系統將自動更新訂單狀態'
+            '付款完成後系統將自動更新訂單狀態',
+            '可使用 barcode_page_url 顯示完整的條碼付款頁面'
           ]
         })
       }
@@ -647,6 +656,675 @@ function generateBarcodeUrl(barcodeData) {
   
   // 使用綠界QRCode服務生成條碼圖片URL
   return `https://payment.ecpay.com.tw/SP/CreateQRCode?qdata=${encodeURIComponent(cleanBarcode)}`;
+}
+
+/**
+ * GET /api/third-party/orders/:orderId/barcode/page
+ * 顯示條碼網頁頁面 (供廠商嵌入或直接使用)
+ */
+router.get('/orders/:orderId/barcode/page', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { theme = 'default', format = 'web', lang = 'zh-TW' } = req.query;
+
+    const order = await getAsync(`
+      SELECT tpo.id, tpo.external_order_id, tpo.amount, tpo.product_info,
+             tpo.payment_code, tpo.payment_url, tpo.barcode_data, tpo.barcode_status,
+             tpo.expire_date, tpo.status, tpo.created_at, tpo.updated_at,
+             tpo.client_system,
+             et.merchant_trade_no, et.trade_no, et.barcode_info
+      FROM third_party_orders tpo
+      LEFT JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
+      WHERE tpo.id = ?
+    `, [orderId]);
+
+    if (!order) {
+      return res.status(404).send(generateErrorPage('找不到訂單', '請檢查訂單編號是否正確'));
+    }
+
+    // 解析條碼數據
+    let barcodeData = null;
+    let barcodeSegments = {
+      barcode_1: null,
+      barcode_2: null,
+      barcode_3: null
+    };
+
+    if (order.barcode_data) {
+      try {
+        barcodeData = JSON.parse(order.barcode_data);
+        barcodeSegments = {
+          barcode_1: barcodeData.barcode_1,
+          barcode_2: barcodeData.barcode_2,
+          barcode_3: barcodeData.barcode_3
+        };
+      } catch (e) {
+        console.error('解析條碼數據失敗:', e);
+      }
+    }
+
+    // 檢查條碼是否過期
+    const isExpired = order.expire_date && new Date(order.expire_date) < new Date();
+    const currentStatus = isExpired ? 'expired' : (order.barcode_status || 'pending');
+
+    // 生成條碼網頁HTML
+    const barcodePageHtml = generateBarcodePageHtml({
+      orderId: order.id,
+      externalOrderId: order.external_order_id,
+      merchantTradeNo: order.merchant_trade_no,
+      amount: order.amount,
+      productInfo: order.product_info,
+      clientSystem: order.client_system,
+      barcodeStatus: currentStatus,
+      barcode: order.payment_code,
+      barcodeUrl: order.payment_url,
+      barcodeSegments: barcodeSegments,
+      expireDate: order.expire_date,
+      createdAt: order.created_at,
+      theme: theme,
+      format: format,
+      lang: lang
+    });
+
+    // 設置適當的Content-Type
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(barcodePageHtml);
+
+  } catch (error) {
+    console.error('條碼網頁生成失敗:', error);
+    res.status(500).send(generateErrorPage('系統錯誤', '條碼網頁生成失敗，請稍後再試'));
+  }
+});
+
+/**
+ * 生成條碼展示網頁HTML
+ */
+function generateBarcodePageHtml(data) {
+  const {
+    orderId,
+    externalOrderId,
+    merchantTradeNo,
+    amount,
+    productInfo,
+    clientSystem,
+    barcodeStatus,
+    barcode,
+    barcodeUrl,
+    barcodeSegments,
+    expireDate,
+    createdAt,
+    theme = 'default',
+    format = 'web',
+    lang = 'zh-TW'
+  } = data;
+
+  // 生成條碼相關內容
+  let barcodeContent = '';
+  let statusMessage = '';
+  let statusClass = '';
+
+  switch (barcodeStatus) {
+    case 'generated':
+      statusClass = 'success';
+      statusMessage = '條碼已生成，請至便利商店付款';
+      
+      if (barcodeSegments.barcode_1 || barcodeSegments.barcode_2 || barcodeSegments.barcode_3) {
+        const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
+        
+        barcodeContent = `
+          <div class="barcode-section">
+            <h3>🛒 便利商店條碼付款</h3>
+            
+            ${barcodeUrl ? `
+              <div class="barcode-image">
+                <img src="${barcodeUrl}" alt="付款條碼" style="max-width: 100%; height: auto; border: 1px solid #ddd; padding: 10px; background: white;">
+                <p class="image-note">掃描此條碼或告知店員以下號碼</p>
+              </div>
+            ` : ''}
+            
+            <div class="barcode-segments">
+              <h4>條碼號碼 (三段式)</h4>
+              ${segments.map((segment, index) => `
+                <div class="segment">
+                  <label>第 ${index + 1} 段:</label>
+                  <span class="barcode-number">${segment}</span>
+                  <button onclick="copyToClipboard('${segment}')" class="copy-btn">複製</button>
+                </div>
+              `).join('')}
+            </div>
+            
+            <div class="barcode-full">
+              <h4>完整條碼</h4>
+              <div class="full-barcode-display">
+                <span class="barcode-number">${barcode || segments.join('-')}</span>
+                <button onclick="copyToClipboard('${barcode || segments.join('-')}')" class="copy-btn">複製</button>
+              </div>
+            </div>
+            
+            <div class="usage-instructions">
+              <h4>💡 使用說明</h4>
+              <ul>
+                <li>方法一：出示條碼圖片讓店員掃描</li>
+                <li>方法二：告知店員三段條碼號碼</li>
+                <li>方法三：在超商機台輸入條碼號碼</li>
+              </ul>
+            </div>
+          </div>
+        `;
+      } else {
+        barcodeContent = `
+          <div class="barcode-section">
+            <div class="no-barcode">
+              <h3>⏳ 條碼生成中</h3>
+              <p>條碼正在生成，請稍後重新整理頁面</p>
+              <button onclick="location.reload()" class="refresh-btn">重新整理</button>
+            </div>
+          </div>
+        `;
+      }
+      break;
+      
+    case 'pending':
+      statusClass = 'warning';
+      statusMessage = '條碼生成中，請稍後重新整理';
+      barcodeContent = `
+        <div class="barcode-section">
+          <div class="pending-barcode">
+            <h3>⏳ 條碼生成中</h3>
+            <p>系統正在生成付款條碼，請稍候...</p>
+            <div class="loading-spinner"></div>
+            <button onclick="location.reload()" class="refresh-btn">重新整理</button>
+          </div>
+        </div>
+      `;
+      break;
+      
+    case 'expired':
+      statusClass = 'error';
+      statusMessage = '條碼已過期，請重新建立訂單';
+      barcodeContent = `
+        <div class="barcode-section">
+          <div class="expired-barcode">
+            <h3>⌛ 條碼已過期</h3>
+            <p>此條碼已過期，無法進行付款</p>
+            <p>請聯繫商家重新建立訂單</p>
+          </div>
+        </div>
+      `;
+      break;
+      
+    default:
+      statusClass = 'info';
+      statusMessage = '條碼狀態未知';
+      barcodeContent = `
+        <div class="barcode-section">
+          <div class="unknown-status">
+            <h3>❓ 狀態未知</h3>
+            <p>無法確定條碼狀態，請聯繫客服</p>
+          </div>
+        </div>
+      `;
+  }
+
+  // 格式化過期時間
+  const expireDateFormatted = expireDate 
+    ? new Date(expireDate).toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '未設定';
+
+  return `
+<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>條碼付款 - 訂單 ${externalOrderId}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .status.warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .status.error {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .status.info {
+            background: #3498db;
+            color: white;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .order-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .info-value {
+            color: #212529;
+        }
+        
+        .amount {
+            font-size: 18px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .barcode-section {
+            background: #fff;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .barcode-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .barcode-image {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .barcode-image img {
+            border-radius: 8px;
+        }
+        
+        .image-note {
+            margin-top: 10px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .barcode-segments h4,
+        .barcode-full h4,
+        .usage-instructions h4 {
+            color: #495057;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 5px;
+        }
+        
+        .segment,
+        .full-barcode-display {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .segment label {
+            min-width: 80px;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .barcode-number {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            background: white;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin: 0 10px;
+        }
+        
+        .copy-btn,
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .copy-btn:hover,
+        .refresh-btn:hover {
+            background: #2980b9;
+        }
+        
+        .usage-instructions ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .usage-instructions li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .usage-instructions li:last-child {
+            border-bottom: none;
+        }
+        
+        .pending-barcode,
+        .expired-barcode,
+        .unknown-status,
+        .no-barcode {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header,
+            .content {
+                padding: 20px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .segment,
+            .full-barcode-display {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .segment label {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 便利商店條碼付款</h1>
+            <div class="status ${statusClass}">${statusMessage}</div>
+        </div>
+        
+        <div class="content">
+            <div class="order-info">
+                <div class="info-row">
+                    <span class="info-label">訂單編號:</span>
+                    <span class="info-value">${externalOrderId}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">付款金額:</span>
+                    <span class="info-value amount">NT$ ${amount}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">商品資訊:</span>
+                    <span class="info-value">${productInfo}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">有效期限:</span>
+                    <span class="info-value">${expireDateFormatted}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">建立時間:</span>
+                    <span class="info-value">${new Date(createdAt).toLocaleString('zh-TW')}</span>
+                </div>
+            </div>
+            
+            ${barcodeContent}
+        </div>
+        
+        <div class="footer">
+            <p>由 <strong>${clientSystem || '第三方系統'}</strong> 提供服務</p>
+            <p>如有問題請聯繫客服 | <a href="#" onclick="location.reload()">重新整理頁面</a></p>
+        </div>
+    </div>
+    
+    <script>
+        // 複製到剪貼板功能
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showCopySuccess();
+                }, function(err) {
+                    fallbackCopyToClipboard(text);
+                });
+            } else {
+                fallbackCopyToClipboard(text);
+            }
+        }
+        
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.top = "-1000px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess();
+                } else {
+                    showCopyError();
+                }
+            } catch (err) {
+                showCopyError();
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess() {
+            // 簡單的提示
+            const originalText = event.target.textContent;
+            event.target.textContent = '已複製!';
+            event.target.style.background = '#27ae60';
+            setTimeout(() => {
+                event.target.textContent = originalText;
+                event.target.style.background = '#3498db';
+            }, 1500);
+        }
+        
+        function showCopyError() {
+            alert('複製失敗，請手動選取文字');
+        }
+        
+        // 自動重新整理 (僅在條碼生成中時)
+        if ('${barcodeStatus}' === 'pending') {
+            setTimeout(() => {
+                location.reload();
+            }, 15000); // 15秒後自動重新整理
+        }
+    </script>
+</body>
+</html>
+  `;
+}
+
+/**
+ * 生成錯誤頁面HTML
+ */
+function generateErrorPage(title, message) {
+  return `
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .error-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+        }
+        .error-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .error-title {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .error-message {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .back-btn {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .back-btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">❌</div>
+        <h1 class="error-title">${title}</h1>
+        <p class="error-message">${message}</p>
+        <a href="javascript:history.back()" class="back-btn">返回上頁</a>
+    </div>
+</body>
+</html>
+  `;
 }
 
 /**
