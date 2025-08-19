@@ -60,7 +60,7 @@ X-API-KEY: 您的API Key
 
 ## 💳 使用流程
 
-1. 廠商調用我們的API建立訂單
+1. 調用我們的API建立訂單
 2. 使用回傳的`ecpay_form`參數建立表單
 3. 用戶提交表單跳轉到ECPay頁面
 4. 用戶在ECPay頁面點選取得條碼
@@ -78,7 +78,7 @@ X-API-KEY: 您的API Key
 
 ## 🔔 限制說明
 
-- 我們無法直接產生條碼資料
+- 無法直接產生條碼資料
 - 無法取得ECPay的條碼資訊  
 - 只能協助建立訂單和提供表單參數
 - 付款狀態需透過ECPay回調或輪詢確認
@@ -96,4 +96,77 @@ curl -X POST https://corba3c-production.up.railway.app/api/third-party/barcode/c
     "amount": 299,
     "client_order_id": "TEST-001"
   }'
+```
+
+## 📋 API使用範例
+
+### JavaScript範例
+```javascript
+async function createOrder() {
+  try {
+    const response = await fetch('https://corba3c-production.up.railway.app/api/third-party/barcode/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': 'your-api-key-here'
+      },
+      body: JSON.stringify({
+        amount: 299,
+        client_order_id: 'ORDER-' + Date.now()
+      })
+    });
+    
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error('API調用失敗:', error);
+  }
+}
+```
+
+### PHP範例
+```php
+<?php
+$url = 'https://corba3c-production.up.railway.app/api/third-party/barcode/create';
+
+$data = [
+    'amount' => 299,
+    'client_order_id' => 'ORDER-' . time()
+];
+
+$options = [
+    'http' => [
+        'header' => [
+            'Content-Type: application/json',
+            'X-API-KEY: your-api-key-here'
+        ],
+        'method' => 'POST',
+        'content' => json_encode($data)
+    ]
+];
+
+$context = stream_context_create($options);
+$result = file_get_contents($url, false, $context);
+$response = json_decode($result, true);
+
+print_r($response);
+?>
+```
+
+### Python範例
+```python
+import requests
+
+url = 'https://corba3c-production.up.railway.app/api/third-party/barcode/create'
+headers = {
+    'Content-Type': 'application/json',
+    'X-API-KEY': 'your-api-key-here'
+}
+data = {
+    'amount': 299,
+    'client_order_id': 'ORDER-' + str(int(time.time()))
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
 ```
