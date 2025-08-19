@@ -767,27 +767,30 @@ function generateBarcodePageHtml(data) {
   let barcodeContent = '';
   let statusMessage = '';
   let statusClass = '';
+  
+  // 預先處理條碼段數據
+  const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
+  const hasValidSegments = segments.length > 0;
+  
+  // 準備最終的條碼段（可能包含從完整條碼解析的段）
+  let finalSegments = segments;
 
   switch (barcodeStatus) {
     case 'generated':
       statusClass = 'success';
       statusMessage = '條碼已生成，請至便利商店付款';
       
-      // 處理條碼段 - 檢查是否有有效的條碼數據
-      const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
-      const hasValidSegments = segments.length > 0;
-      
       // 如果沒有條碼段但有完整條碼，嘗試解析
       if (!hasValidSegments && barcode) {
         const parsedSegments = barcode.split('-').filter(Boolean);
         if (parsedSegments.length > 0) {
-          segments.push(...parsedSegments);
+          finalSegments = parsedSegments;
         }
       }
       
       // 生成本地Code39條碼
       const baseUrl = process.env.BASE_URL || 'https://corba3c-production.up.railway.app';
-      const localBarcodeUrl = segments.length > 0 
+      const localBarcodeUrl = finalSegments.length > 0 
         ? `${baseUrl}/api/third-party/barcode/generate-multi`
         : null;
 
@@ -804,10 +807,10 @@ function generateBarcodePageHtml(data) {
               </div>
             ` : ''}
             
-            ${segments.length > 0 ? `
+            ${finalSegments.length > 0 ? `
               <div class="barcode-segments">
-                <h4>條碼號碼 (${segments.length}段式)</h4>
-                ${segments.map((segment, index) => `
+                <h4>條碼號碼 (${finalSegments.length}段式)</h4>
+                ${finalSegments.map((segment, index) => `
                   <div class="segment">
                     <label>第 ${index + 1} 段:</label>
                     <span class="barcode-number">${segment}</span>
@@ -817,12 +820,12 @@ function generateBarcodePageHtml(data) {
               </div>
             ` : ''}
             
-            ${(barcode || segments.length > 0) ? `
+            ${(barcode || finalSegments.length > 0) ? `
               <div class="barcode-full">
                 <h4>完整條碼</h4>
                 <div class="full-barcode-display">
-                  <span class="barcode-number">${barcode || segments.join('-')}</span>
-                  <button onclick="copyToClipboard('${barcode || segments.join('-')}')" class="copy-btn">複製</button>
+                  <span class="barcode-number">${barcode || finalSegments.join('-')}</span>
+                  <button onclick="copyToClipboard('${barcode || finalSegments.join('-')}')" class="copy-btn">複製</button>
                 </div>
               </div>
             ` : `
@@ -833,7 +836,7 @@ function generateBarcodePageHtml(data) {
               </div>
             `}
             
-            ${segments.length > 0 ? `
+            ${finalSegments.length > 0 ? `
               <div class="local-barcode-section">
                 <h4>📊 本地生成條碼</h4>
                 <div class="local-barcode-container" id="localBarcodeContainer">
@@ -1344,11 +1347,7 @@ function generateBarcodePageHtml(data) {
             if (!container) return;
             
             // 取得條碼段
-            const segments = [];
-            ${(() => {
-              const segments = [barcodeSegments.barcode_1, barcodeSegments.barcode_2, barcodeSegments.barcode_3].filter(Boolean);
-              return segments.map((segment) => `segments.push('${segment}');`).join('\n            ');
-            })()}
+            const segments = [${finalSegments.map(segment => `'${segment}'`).join(', ')}];
             
             if (segments.length === 0) {
                 container.innerHTML = '<p style="color: #6c757d; text-align: center;">等待條碼數據...</p>';
