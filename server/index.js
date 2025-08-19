@@ -958,7 +958,7 @@ app.get('/create-test-barcode', async (req, res) => {
         
         <div>
             <a href="${barcodePageUrl}" class="btn primary">🏪 查看條碼付款頁面</a>
-            <a href="/api/third-party/orders/${orderId}/barcode" class="btn">📋 查看API資料</a>
+            <a href="/test-barcode-api/${orderId}" class="btn">📋 查看API資料</a>
         </div>
         
         <div>
@@ -1006,6 +1006,256 @@ app.get('/create-test-barcode', async (req, res) => {
     <h1 style="color: red;">❌ 建立條碼訂單失敗</h1>
     <p>${error.message}</p>
     <p style="font-size: 14px; color: #666;">請檢查網路連線或稍後再試</p>
+    <a href="/test-barcode" style="color: blue;">返回測試頁面</a>
+</body>
+</html>
+    `);
+  }
+});
+
+// 測試用API資料查看端點 (不需要API Key)
+app.get('/test-barcode-api/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // 使用測試API Key呼叫API
+    const apiUrl = `https://corba3c-production.up.railway.app/api/third-party/orders/${orderId}/barcode`;
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'X-API-KEY': 'api-key-corba3c-prod-1755101802637fufedw01d8l'
+      }
+    });
+    
+    const data = await response.json();
+    
+    // 產生美化的API資料頁面
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>條碼API資料 - 訂單 ${orderId}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        .status { 
+            display: inline-block; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            margin-top: 10px;
+        }
+        .status.success { background: #27ae60; color: white; }
+        .status.pending { background: #f39c12; color: white; }
+        .status.error { background: #e74c3c; color: white; }
+        .content { padding: 30px; }
+        .json-container {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+        .back-btn {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 5px 0 0;
+            transition: background 0.3s;
+        }
+        .back-btn:hover { background: #2980b9; }
+        .secondary { background: #6c757d; }
+        .secondary:hover { background: #545b62; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        .info-card h4 { color: #2c3e50; margin-bottom: 10px; }
+        .info-card p { color: #495057; margin: 5px 0; }
+        .barcode-segments {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .segment {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #2c3e50;
+            border: 2px dashed #3498db;
+        }
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 條碼API資料</h1>
+            <div class="status ${response.ok && data.success ? 'success' : 'error'}">
+                ${response.ok && data.success ? '✅ API成功' : '❌ API錯誤'}
+            </div>
+        </div>
+        
+        <div class="content">
+            ${response.ok && data.success ? `
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h4>📦 訂單資訊</h4>
+                        <p><strong>訂單ID:</strong> ${data.data.order_id}</p>
+                        <p><strong>外部ID:</strong> ${data.data.external_order_id}</p>
+                        <p><strong>金額:</strong> NT$ ${data.data.amount}</p>
+                        <p><strong>商品:</strong> ${data.data.product_info}</p>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h4>🏪 條碼狀態</h4>
+                        <p><strong>狀態:</strong> ${data.data.barcode_status}</p>
+                        <p><strong>建立時間:</strong> ${new Date(data.data.created_at).toLocaleString('zh-TW')}</p>
+                        <p><strong>更新時間:</strong> ${new Date(data.data.updated_at).toLocaleString('zh-TW')}</p>
+                        <p><strong>過期時間:</strong> ${data.data.expire_date ? new Date(data.data.expire_date).toLocaleString('zh-TW') : '未設定'}</p>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h4>🔗 相關連結</h4>
+                        <p><a href="${data.data.barcode_page_url}" target="_blank" style="color: #007bff;">條碼頁面</a></p>
+                        <p><a href="${data.data.barcode_iframe_url}" target="_blank" style="color: #007bff;">iframe版本</a></p>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h4>💳 綠界資訊</h4>
+                        <p><strong>商家編號:</strong> ${data.data.merchant_trade_no}</p>
+                        <p><strong>交易編號:</strong> ${data.data.trade_no || '尚未產生'}</p>
+                        <p><strong>訂單狀態:</strong> ${data.data.order_status}</p>
+                    </div>
+                </div>
+                
+                ${data.data.barcode_segments && (data.data.barcode_segments.barcode_1 || data.data.barcode_segments.barcode_2 || data.data.barcode_segments.barcode_3) ? `
+                    <div class="barcode-segments">
+                        <h4>📊 條碼段資訊</h4>
+                        ${data.data.barcode_segments.barcode_1 ? `
+                            <div class="segment">
+                                第1段: ${data.data.barcode_segments.barcode_1}
+                                <button class="copy-btn" onclick="copyToClipboard('${data.data.barcode_segments.barcode_1}')">複製</button>
+                            </div>
+                        ` : ''}
+                        ${data.data.barcode_segments.barcode_2 ? `
+                            <div class="segment">
+                                第2段: ${data.data.barcode_segments.barcode_2}
+                                <button class="copy-btn" onclick="copyToClipboard('${data.data.barcode_segments.barcode_2}')">複製</button>
+                            </div>
+                        ` : ''}
+                        ${data.data.barcode_segments.barcode_3 ? `
+                            <div class="segment">
+                                第3段: ${data.data.barcode_segments.barcode_3}
+                                <button class="copy-btn" onclick="copyToClipboard('${data.data.barcode_segments.barcode_3}')">複製</button>
+                            </div>
+                        ` : ''}
+                        ${data.data.barcode ? `
+                            <div class="segment" style="border-color: #28a745;">
+                                完整條碼: ${data.data.barcode}
+                                <button class="copy-btn" onclick="copyToClipboard('${data.data.barcode}')">複製</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : '<div class="info-card"><h4>⏳ 等待條碼</h4><p>條碼尚未生成，請稍後重新整理</p></div>'}
+                
+                <h4>🔧 完整API回應</h4>
+            ` : ''}
+            
+            <div class="json-container">${JSON.stringify(data, null, 2)}</div>
+            
+            <div>
+                <a href="javascript:history.back()" class="back-btn">🔙 返回</a>
+                <a href="/test-barcode" class="back-btn secondary">🧪 新測試</a>
+                <a href="${response.ok && data.success && data.data.barcode_page_url ? data.data.barcode_page_url : '#'}" class="back-btn">🏪 條碼頁面</a>
+                <button onclick="location.reload()" class="back-btn secondary">🔄 重新整理</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function() {
+                    // 簡單的提示
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = '已複製!';
+                    btn.style.background = '#20c997';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '#28a745';
+                    }, 1500);
+                });
+            } else {
+                alert('複製功能不支援，請手動選取文字');
+            }
+        }
+    </script>
+</body>
+</html>
+    `);
+
+  } catch (error) {
+    console.error('API資料查詢錯誤:', error);
+    res.status(500).send(`
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>錯誤</title></head>
+<body style="font-family: Arial; text-align: center; padding: 50px;">
+    <h1 style="color: red;">❌ 查詢失敗</h1>
+    <p>無法獲取API資料: ${error.message}</p>
     <a href="/test-barcode" style="color: blue;">返回測試頁面</a>
 </body>
 </html>
