@@ -14,6 +14,7 @@ import {
   generateMultiSegmentCode39SVG, 
   validateCode39Text 
 } from '../utils/code39-generator.js';
+import { queryAndUpdateBarcodeInfo } from '../services/ecpay.js';
 
 const router = express.Router();
 
@@ -1688,5 +1689,182 @@ function generateBarcodeInfo(barcode1, barcode2, barcode3, paymentNo, expireDate
     }
   };
 }
+
+/**
+ * POST /api/third-party/orders/:orderId/barcode/query
+ * 主動查詢ECPay條碼資訊 (CVS查詢功能)
+ */
+router.post('/orders/:orderId/barcode/query', apiKeyAuth, apiCallLogger, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // 驗證訂單是否屬於該客戶
+    const order = await getAsync(`
+      SELECT id, external_order_id, client_system, barcode_status
+      FROM third_party_orders 
+      WHERE id = ? AND client_system = ?
+    `, [orderId, req.clientInfo.system]);
+
+    if (!order) {
+      return res.status(404).json({
+        error: true,
+        message: '找不到訂單'
+      });
+    }
+
+    securityLog('info', 'CVS查詢條碼資訊', req, {
+      client_system: req.clientInfo.system,
+      order_id: orderId,
+      external_order_id: order.external_order_id
+    });
+
+    // 執行ECPay查詢
+    const queryResult = await queryAndUpdateBarcodeInfo(orderId);
+
+    if (queryResult.success) {
+      // 查詢成功，返回更新後的訂單資訊
+      const updatedOrder = await getAsync(`
+        SELECT tpo.id, tpo.external_order_id, tpo.amount, tpo.product_info,
+               tpo.payment_code, tpo.payment_url, tpo.barcode_data, tpo.barcode_status,
+               tpo.expire_date, tpo.status, tpo.created_at, tpo.updated_at,
+               et.merchant_trade_no, et.trade_no, et.barcode_info
+        FROM third_party_orders tpo
+        LEFT JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
+        WHERE tpo.id = ?
+      `, [orderId]);
+
+      // 解析條碼數據
+      let barcodeSegments = {
+        barcode_1: null,
+        barcode_2: null,
+        barcode_3: null
+      };
+
+      if (updatedOrder.barcode_data) {
+        try {
+          const barcodeData = JSON.parse(updatedOrder.barcode_data);
+          barcodeSegments = {
+            barcode_1: barcodeData.barcode_1,
+            barcode_2: barcodeData.barcode_2,
+            barcode_3: barcodeData.barcode_3
+          };
+        } catch (e) {
+          console.error('解析條碼數據失敗:', e);
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          order_id: updatedOrder.id,
+          external_order_id: updatedOrder.external_order_id,
+          merchant_trade_no: updatedOrder.merchant_trade_no,
+          
+          // 查詢結果
+          query_success: queryResult.success,
+          barcode_updated: queryResult.barcodeUpdated,
+          trade_status: queryResult.tradeStatus,
+          payment_type: queryResult.paymentType,
+          payment_date: queryResult.paymentDate,
+          
+          // 條碼資訊
+          barcode_status: updatedOrder.barcode_status,
+          barcode: updatedOrder.payment_code,
+          barcode_url: updatedOrder.payment_url,
+          barcode_segments: barcodeSegments,
+          
+          // 時間資訊
+          expire_date: updatedOrder.expire_date,
+          updated_at: updatedOrder.updated_at,
+          
+          message: queryResult.barcodeUpdated 
+            ? '成功查詢並更新條碼資訊'
+            : '查詢完成，但條碼資訊尚未產生'
+        }
+      });
+
+    } else {
+      res.status(500).json({
+        error: true,
+        message: 'ECPay查詢失敗',
+        details: queryResult.error,
+        data: {
+          order_id: order.id,
+          external_order_id: order.external_order_id,
+          query_success: false,
+          barcode_updated: false
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('CVS查詢條碼失敗:', error);
+    securityLog('error', 'CVS查詢失敗', req, { error: error.message });
+    
+    res.status(500).json({
+      error: true,
+      message: '查詢失敗',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/third-party/orders/:orderId/barcode/refresh
+ * 簡化的條碼刷新端點 (用於測試頁面輪詢)
+ */
+router.get('/orders/:orderId/barcode/refresh', apiKeyAuth, apiCallLogger, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // 驗證訂單是否屬於該客戶
+    const order = await getAsync(`
+      SELECT id, external_order_id, client_system
+      FROM third_party_orders 
+      WHERE id = ? AND client_system = ?
+    `, [orderId, req.clientInfo.system]);
+
+    if (!order) {
+      return res.status(404).json({
+        error: true,
+        message: '找不到訂單'
+      });
+    }
+
+    // 執行ECPay查詢 (不記錄安全日誌，避免頻繁輪詢造成日誌過多)
+    const queryResult = await queryAndUpdateBarcodeInfo(orderId);
+
+    // 獲取最新的訂單資訊
+    const response = await fetch(`${process.env.BASE_URL || 'https://corba3c-production.up.railway.app'}/api/third-party/orders/${orderId}/barcode`, {
+      headers: {
+        'X-API-KEY': req.headers['x-api-key']
+      }
+    });
+
+    if (response.ok) {
+      const barcodeData = await response.json();
+      
+      // 添加查詢結果資訊
+      if (barcodeData.success) {
+        barcodeData.data.query_performed = true;
+        barcodeData.data.query_success = queryResult.success;
+        barcodeData.data.barcode_updated = queryResult.barcodeUpdated;
+        barcodeData.data.ecpay_trade_status = queryResult.tradeStatus;
+      }
+      
+      res.json(barcodeData);
+    } else {
+      throw new Error('無法獲取訂單資訊');
+    }
+
+  } catch (error) {
+    console.error('條碼刷新失敗:', error);
+    res.status(500).json({
+      error: true,
+      message: '刷新失敗',
+      details: error.message
+    });
+  }
+});
 
 export default router;

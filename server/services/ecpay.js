@@ -473,4 +473,180 @@ function generateMockBarcode() {
   return `${prefix}${code}${timestamp}`;
 }
 
+/**
+ * 查詢ECPay訂單狀態和條碼資訊 (QueryTradeInfo)
+ * @param {string} merchantTradeNo - 商家交易編號
+ * @returns {Promise<Object>} 查詢結果
+ */
+export async function queryECPayTradeInfo(merchantTradeNo) {
+  try {
+    console.log('查詢ECPay訂單:', merchantTradeNo);
+    
+    // 準備查詢參數
+    const timestamp = Math.floor(Date.now() / 1000); // Unix timestamp
+    
+    const queryParams = {
+      MerchantID: ECPAY_CONFIG.merchantID,
+      MerchantTradeNo: merchantTradeNo,
+      TimeStamp: timestamp.toString()
+    };
+
+    // 生成CheckMacValue
+    queryParams.CheckMacValue = generateCheckMacValue(queryParams, ECPAY_CONFIG.hashKey, ECPAY_CONFIG.hashIV);
+
+    console.log('查詢參數:', queryParams);
+
+    // 建立查詢字串
+    const formData = new URLSearchParams();
+    Object.keys(queryParams).forEach(key => {
+      formData.append(key, queryParams[key]);
+    });
+
+    // 發送查詢請求
+    const queryUrl = ECPAY_CONFIG.testMode 
+      ? 'https://payment-stage.ecpay.com.tw/Cashier/QueryTradeInfo/V5'
+      : 'https://payment.ecpay.com.tw/Cashier/QueryTradeInfo/V5';
+    
+    console.log('查詢URL:', queryUrl);
+    
+    const response = await fetch(queryUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    });
+
+    const responseText = await response.text();
+    console.log('ECPay查詢回應 (原始):', responseText);
+
+    if (!response.ok) {
+      throw new Error(`ECPay查詢失敗: HTTP ${response.status}`);
+    }
+
+    // 解析回應 (ECPay可能回傳URL encoded格式)
+    let responseData;
+    try {
+      // 嘗試解析JSON
+      responseData = JSON.parse(responseText);
+    } catch (jsonError) {
+      // 如果不是JSON，嘗試解析URL encoded
+      const params = new URLSearchParams(responseText);
+      responseData = {};
+      for (const [key, value] of params) {
+        responseData[key] = value;
+      }
+    }
+
+    console.log('ECPay查詢回應 (解析後):', responseData);
+
+    // 驗證CheckMacValue
+    if (responseData.CheckMacValue) {
+      const receivedCheckMac = responseData.CheckMacValue;
+      const calculatedCheckMac = generateCheckMacValue(responseData, ECPAY_CONFIG.hashKey, ECPAY_CONFIG.hashIV);
+      
+      if (receivedCheckMac !== calculatedCheckMac) {
+        console.warn('ECPay查詢回應CheckMacValue驗證失敗');
+        console.warn('接收到的CheckMac:', receivedCheckMac);
+        console.warn('計算出的CheckMac:', calculatedCheckMac);
+      } else {
+        console.log('ECPay查詢回應CheckMacValue驗證成功');
+      }
+    }
+
+    return {
+      success: true,
+      data: responseData,
+      originalResponse: responseText
+    };
+
+  } catch (error) {
+    console.error('ECPay查詢失敗:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+}
+
+/**
+ * 查詢並更新條碼資訊
+ * @param {number} thirdPartyOrderId - 第三方訂單ID
+ * @returns {Promise<Object>} 更新結果
+ */
+export async function queryAndUpdateBarcodeInfo(thirdPartyOrderId) {
+  try {
+    console.log('查詢並更新條碼資訊:', thirdPartyOrderId);
+    
+    // 獲取訂單資訊
+    const order = await getAsync(`
+      SELECT tpo.*, et.merchant_trade_no, et.trade_no
+      FROM third_party_orders tpo
+      LEFT JOIN ecpay_transactions et ON tpo.id = et.third_party_order_id
+      WHERE tpo.id = ?
+      LIMIT 1
+    `, [thirdPartyOrderId]);
+
+    if (!order || !order.merchant_trade_no) {
+      throw new Error('找不到訂單或商家交易編號');
+    }
+
+    // 查詢ECPay訂單狀態
+    const queryResult = await queryECPayTradeInfo(order.merchant_trade_no);
+    
+    if (!queryResult.success) {
+      throw new Error('ECPay查詢失敗: ' + queryResult.error);
+    }
+
+    const ecpayData = queryResult.data;
+    console.log('ECPay訂單狀態:', ecpayData);
+
+    // 檢查是否有條碼資訊
+    let barcodeUpdated = false;
+    if (ecpayData.TradeStatus === '1' || ecpayData.PaymentType === 'BARCODE') {
+      // 檢查是否有條碼段資訊 (這些資訊可能在特定情況下被包含)
+      if (ecpayData.Barcode1 || ecpayData.Barcode2 || ecpayData.Barcode3) {
+        const barcodeData = {
+          barcode_1: ecpayData.Barcode1 || '',
+          barcode_2: ecpayData.Barcode2 || '',
+          barcode_3: ecpayData.Barcode3 || '',
+          full_barcode: [ecpayData.Barcode1, ecpayData.Barcode2, ecpayData.Barcode3].filter(Boolean).join('-'),
+          payment_no: ecpayData.PaymentNo || '',
+          expire_date: ecpayData.ExpireDate || null,
+          trade_status: ecpayData.TradeStatus,
+          query_time: new Date().toISOString()
+        };
+
+        // 更新訂單條碼資訊
+        await runSQL(`
+          UPDATE third_party_orders 
+          SET barcode_data = ?, barcode_status = 'generated', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `, [JSON.stringify(barcodeData), thirdPartyOrderId]);
+
+        console.log('條碼資訊已更新:', barcodeData);
+        barcodeUpdated = true;
+      }
+    }
+
+    return {
+      success: true,
+      barcodeUpdated,
+      tradeStatus: ecpayData.TradeStatus,
+      paymentType: ecpayData.PaymentType,
+      paymentDate: ecpayData.PaymentDate,
+      ecpayData
+    };
+
+  } catch (error) {
+    console.error('查詢並更新條碼資訊失敗:', error);
+    return {
+      success: false,
+      error: error.message,
+      barcodeUpdated: false
+    };
+  }
+}
+
 export { ECPAY_CONFIG };
