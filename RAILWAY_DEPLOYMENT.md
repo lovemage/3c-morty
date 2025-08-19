@@ -1,76 +1,239 @@
-# Railway 部署指南
+# 第三方金流API - 廠商接入文件
 
-## 📋 部署步驟
+## 🎯 服務說明
+本API提供便利商店條碼付款服務，廠商只需要提供訂單金額和商品資訊，我們負責處理所有金流相關的技術細節。
 
-### 1. 建立 Railway 專案
-1. 前往 [Railway](https://railway.app)
-2. 連接您的 GitHub 倉庫
-3. 選擇 "Deploy from GitHub repo"
+## 🔑 API Key申請
+請聯繫我們的客服團隊申請專屬的API Key：
+- 📧 Email: support@your-company.com
+- 📱 客服專線: 0800-123-456
 
-### 2. 添加 PostgreSQL 資料庫
-1. 在 Railway 儀表板點擊 "Add Service"
-2. 選擇 "Database" → "PostgreSQL"
-3. Railway 會自動設定 `DATABASE_URL` 環境變數
+## 🚀 快速開始
 
-### 3. 設定環境變數
-在 Railway 專案設定中添加以下環境變數：
+### 1. 創建條碼訂單
 
-```bash
-# 基本設定
-NODE_ENV=production
-PORT=3001
+**端點**: `POST /api/third-party/barcode/create`
 
-# 綠界金流設定
-ECPAY_MERCHANT_ID=你的商店代碼
-ECPAY_HASH_KEY=你的金鑰
-ECPAY_HASH_IV=你的向量
-
-# 回調網址設定 (替換為你的 Railway 域名)
-ECPAY_RETURN_URL=https://your-app.railway.app/api/third-party/ecpay/callback
-ECPAY_PAYMENT_INFO_URL=https://your-app.railway.app/api/third-party/ecpay/payment-info
-
-# 前端網址 (如果需要 CORS 設定)
-FRONTEND_URL=https://your-app.railway.app
+**Headers**:
+```
+Content-Type: application/json
+X-API-KEY: 您的專屬API Key
 ```
 
-### 4. 資料庫自動切換
-系統會自動檢測環境：
-- 🏠 **本地開發**: 使用 SQLite (`server/database/database.db`)
-- 🚀 **Railway 生產**: 使用 PostgreSQL (`DATABASE_URL`)
-
-### 5. 部署確認
-1. 檢查 Railway 日誌確認部署成功
-2. 訪問 `https://your-app.railway.app/api/health` 確認 API 運作
-3. 檢查資料庫是否初始化完成
-
-## 🔄 資料遷移
-如果需要從本地 SQLite 遷移資料到 Railway PostgreSQL：
-
-1. 匯出本地資料 (如果需要)
-2. 使用 Railway 提供的資料庫連線資訊手動匯入
-
-## ⚠️ 注意事項
-- Railway PostgreSQL 是持久化的，資料不會在部署時消失
-- 確保綠界金流的回調網址指向正確的 Railway 域名
-- 生產環境會自動使用 PostgreSQL，無需手動設定
-- 每次部署後資料庫結構會自動更新，但資料會保留
-
-## 📞 測試 API
-部署完成後，可使用以下命令測試第三方 API：
-
-```bash
-curl -X POST https://your-app.railway.app/api/third-party/barcode/create \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: your-api-key" \
-  -d '{
-    "amount": 1000,
-    "product_info": "測試商品",
-    "client_order_id": "TEST-001",
-    "store_type": "7ELEVEN"
-  }'
+**請求參數**:
+```json
+{
+  "amount": 299,                    // 付款金額 (必填, 1-6000之間)
+  "client_order_id": "ORDER-001",   // 您的訂單編號 (必填, 唯一值)
+  "product_info": "商品名稱",        // 商品描述 (選填)
+  "callback_url": "https://your-domain.com/payment-callback",  // 付款通知網址 (選填)
+  "store_type": "7ELEVEN"           // 便利商店類型 (選填: 7ELEVEN, FAMILY, HILIFE, OKMART)
+}
 ```
 
-## 🛠️ 故障排除
-- 檢查 Railway 日誌查看錯誤訊息
-- 確認環境變數設定正確
-- 驗證 PostgreSQL 資料庫連線狀態
+**回應範例**:
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": 123,
+    "client_order_id": "ORDER-001",
+    "merchant_trade_no": "TPA12345678",
+    "amount": 299,
+    "expire_date": "2025-08-26T07:14:09.699Z",
+    "barcode_status": "generated",
+    "barcode_page_url": "https://api.your-service.com/orders/123/barcode/page",
+    "customer_info_url": "https://api.your-service.com/customer-info/123",
+    "message": "訂單建立成功"
+  }
+}
+```
+
+### 2. 查詢訂單狀態
+
+**端點**: `GET /api/third-party/orders/{order_id}/barcode`
+
+**Headers**:
+```
+X-API-KEY: 您的專屬API Key
+```
+
+**回應範例**:
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": 123,
+    "client_order_id": "ORDER-001",
+    "amount": 299,
+    "barcode_status": "generated",
+    "order_status": "pending",
+    "barcode_page_url": "https://api.your-service.com/orders/123/barcode/page",
+    "expire_date": "2025-08-26T07:14:09.699Z",
+    "created_at": "2025-08-19T07:14:09.546Z",
+    "updated_at": "2025-08-19T07:14:09.796Z",
+    "message": "條碼已生成，可至便利商店付款"
+  }
+}
+```
+
+## 📱 條碼展示方式
+
+### 方式一：直接跳轉 (推薦)
+```javascript
+// 將用戶導向條碼頁面
+window.location.href = response.data.barcode_page_url;
+```
+
+### 方式二：嵌入iframe
+```html
+<iframe 
+  src="https://api.your-service.com/orders/123/barcode/page?format=iframe" 
+  width="100%" 
+  height="600"
+  style="border: none;">
+</iframe>
+```
+
+### 方式三：彈出視窗
+```javascript
+window.open(
+  response.data.barcode_page_url, 
+  'barcode-payment', 
+  'width=400,height=600,scrollbars=yes'
+);
+```
+
+## 🔔 付款通知機制
+
+當顧客完成付款後，系統會向您的`callback_url`發送POST通知：
+
+**通知格式**:
+```json
+{
+  "event": "payment.completed",
+  "payment_id": "PAY20250819123",
+  "external_ref": "ORDER-001",
+  "amount": 299,
+  "paid_at": "2025-08-19T08:30:00.000Z",
+  "signature": "abc123..."
+}
+```
+
+**驗證簽名**:
+```javascript
+// 計算簽名 (使用您的API Key)
+const data = payment_id + external_ref + amount + paid_at;
+const signature = crypto.createHash('sha256')
+  .update(data + your_api_key)
+  .digest('hex');
+```
+
+## 📊 訂單狀態說明
+
+| 狀態 | 說明 |
+|------|------|
+| `pending` | 待付款 - 條碼已生成，等待顧客付款 |
+| `paid` | 已付款 - 顾客已完成付款 |
+| `expired` | 已過期 - 超過付款期限 |
+| `cancelled` | 已取消 - 訂單已被取消 |
+
+## 💡 最佳實踐
+
+### 1. 輪詢檢查付款狀態
+```javascript
+async function checkPaymentStatus(orderId) {
+  const response = await fetch(`/api/third-party/orders/${orderId}/barcode`, {
+    headers: {
+      'X-API-KEY': 'your-api-key'
+    }
+  });
+  
+  const result = await response.json();
+  
+  if (result.data.order_status === 'paid') {
+    // 付款完成，更新您的系統
+    console.log('付款成功！');
+  }
+}
+
+// 每30秒檢查一次
+setInterval(() => checkPaymentStatus(123), 30000);
+```
+
+### 2. 錯誤處理
+```javascript
+try {
+  const response = await fetch('/api/third-party/barcode/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': 'your-api-key'
+    },
+    body: JSON.stringify(orderData)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || '請求失敗');
+  }
+
+  const result = await response.json();
+  // 處理成功回應
+  
+} catch (error) {
+  console.error('創建訂單失敗:', error.message);
+  // 顯示錯誤訊息給用戶
+}
+```
+
+## 🛡️ 安全注意事項
+
+1. **保護API Key**: 
+   - 🚫 不要在前端程式碼中暴露API Key
+   - ✅ 在服務器端調用我們的API
+   - 🔄 定期更新API Key
+
+2. **驗證回調**: 
+   - ✅ 必須驗證付款通知的簽名
+   - ✅ 檢查訂單金額和狀態
+   - 🔒 使用HTTPS接收通知
+
+3. **訂單管理**:
+   - ✅ 確保client_order_id的唯一性
+   - ✅ 設定合理的付款超時時間
+   - 📝 記錄所有API調用日誌
+
+## 🧪 測試環境
+
+我們提供測試頁面供您測試整合：
+- 🌐 測試頁面：`https://api.your-service.com/test-barcode`
+- 🔧 API測試：使用任何HTTP工具 (如Postman)
+- 📞 技術支援：integration@your-company.com
+
+## 📈 用量監控
+
+您可以通過以下方式監控API使用情況：
+- 📊 每日用量報告
+- 🚨 異常使用通知
+- 📞 24/7技術支援
+
+## 🆘 常見問題
+
+**Q: 條碼多久會過期？**
+A: 條碼的有效期限為7天，過期後需要重新創建訂單。
+
+**Q: 支援哪些便利商店？**
+A: 支援7-ELEVEN、全家、萊爾富、OK mart等主要便利商店。
+
+**Q: 如何處理重複的訂單？**
+A: 請確保每個`client_order_id`都是唯一的，系統會拒絕重複的訂單號。
+
+**Q: 付款通知延遲怎麼辦？**
+A: 通常付款通知會在顧客完成付款後30秒內送達，建議實作輪詢機制作為備用。
+
+---
+
+📧 **技術支援**: tech-support@your-company.com  
+📱 **客服專線**: 0800-123-456  
+🌐 **開發者文檔**: https://docs.your-service.com
