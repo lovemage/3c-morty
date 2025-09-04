@@ -548,7 +548,7 @@ router.post('/ecpay/payment-info', async (req, res) => {
       PaymentNo
     } = req.body;
 
-    // 從BarcodeInfo中提取條碼段
+    // 從ECPay回調中提取條碼段（修復條碼字段名稱）
     let Barcode_1, Barcode_2, Barcode_3, finalExpireDate;
     if (BarcodeInfo) {
       console.log('使用BarcodeInfo格式:', BarcodeInfo);
@@ -557,11 +557,11 @@ router.post('/ecpay/payment-info', async (req, res) => {
       Barcode_3 = BarcodeInfo.Barcode3;
       finalExpireDate = BarcodeInfo.ExpireDate || ExpireDate;
     } else {
-      console.log('使用傳統格式');
-      // 兼容舊格式（如果還有的話）
-      Barcode_1 = req.body.Barcode_1;
-      Barcode_2 = req.body.Barcode_2;
-      Barcode_3 = req.body.Barcode_3;
+      console.log('使用ECPay直接格式');
+      // ECPay直接傳送格式：Barcode1, Barcode2, Barcode3
+      Barcode_1 = req.body.Barcode1;
+      Barcode_2 = req.body.Barcode2;
+      Barcode_3 = req.body.Barcode3;
       finalExpireDate = ExpireDate;
     }
 

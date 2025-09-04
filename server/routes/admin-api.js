@@ -418,14 +418,14 @@ router.get('/statistics', adminAuth, async (req, res) => {
       ORDER BY order_count DESC
     `);
 
-    // 最近 7 天的訂單趨勢
+    // 最近 7 天的訂單趨勢（修復PostgreSQL兼容性）
     const dailyStats = await allAsync(`
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as orders,
         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) as revenue
       FROM third_party_orders
-      WHERE created_at >= DATE('now', '-7 days')
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
       GROUP BY DATE(created_at)
       ORDER BY date
     `);
